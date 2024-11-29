@@ -5,13 +5,20 @@
 
 ## w. Team Six (임시 팀명)
 
->**team leader**: 
+> **team leader**: 
+<br>
+
 https://github.com/nuketuna1101
 <br>
->**team members**: 
+
+> **team members**: 
+<br>
 https://github.com/ssy1248
+<br>
 https://github.com/junstar96
+<br>
 https://github.com/CubeTale
+<br>
 https://github.com/seniii99
 
 
@@ -23,18 +30,11 @@ https://github.com/seniii99
 
 > 1) Naming 
     대부분 변수 : camelCase 통일 (snake, Pascal 지양)
-<br>
-
 >    .env, cofig, enum 에 대해선 UpperSnake
-<br>
-    
 > 2) Multiline Formatting
     열거된 데이터/객체에 대해선 line break로 가독성 높이기
-<br>
-
 > 3) Commnet 주석: Block Comment 형식
     코드의 오른쪽이 아닌, 기능 상단/ 라인 상단에 주석 추가
-<br>
 
 ```js
 /*
