@@ -23,6 +23,7 @@ https://github.com/seniii99
 
 > 1) Naming 
     대부분 변수 : camelCase 통일 (snake, Pascal 지양)
+<br>
     .env, cofig, enum 에 대해선 UpperSnake
     
 > 2) Multiline Formatting
@@ -31,9 +32,23 @@ https://github.com/seniii99
 > 3) Commnet 주석: Block Comment 형식
     코드의 오른쪽이 아닌, 기능 상단/ 라인 상단에 주석 추가
 
-
-
-
+```js
+/*
+    컨밴션 예시
+*/
+    const testString = "이런 식으로 카멜케이스 작성합니다.";
+    // 주석은 기능 상단 위에
+    loggers.error({
+        message: '[Error] error occurred',
+        error: err.message,
+        stack: err.stack,
+    });
+    // 열거할 때는 멀티라인, enum은 Upper Snakecase
+    enum Status {
+        ACTIVE,
+        INACTIVE,
+    }
+```
 
 <br><br>
 
