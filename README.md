@@ -6,13 +6,12 @@
 ## w. Team Six (임시 팀명)
 
 > **team leader**: 
-<br>
 
 https://github.com/nuketuna1101
 <br>
 
 > **team members**: 
-<br>
+
 https://github.com/ssy1248
 <br>
 https://github.com/junstar96
@@ -22,7 +21,7 @@ https://github.com/CubeTale
 https://github.com/seniii99
 
 
-<br><br>
+<br>
 
 ---
 
