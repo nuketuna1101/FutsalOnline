@@ -62,9 +62,10 @@ model UserSquads {
 model Players { 
   id BigInt @id @default(autoincrement())
   playerName String @unique
+  playerStatus BigInt
 
   userTeams UserTeams[]
-  playerStatus playerStatus?
+  playerStatus1 playerStatus?
 
 
   @@map("Players")
@@ -102,6 +103,6 @@ model playerStatus {
 
 enum WINRESULT {
   USER1WIN
-  user2WIN
+  USER2WIN
   DRAW
 }
