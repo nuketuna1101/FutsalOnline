@@ -78,28 +78,7 @@ router.post('/gatcha',userAuth, async (req, res) => {
 
 })
 
-//스쿼드를 구성하는 API
-router.post('/squads', userAuth, async (req,res)=>{
-    try{
-        const userid = req.userid;
-        const playerIndexData = req.body;
 
-        const squadTransaction = await prisma.$transaction(async (tx)=>{
-            for(let playerIndex of playerIndexData)
-            {
-                await tx.userSquads.create({
-                    data : {
-                        playerId : playerIndex
-                    }
-                })
-            }
-        })
-        
-    }
-    catch(err){
-        next(err);
-    }
-})
 
 
 export default router;
