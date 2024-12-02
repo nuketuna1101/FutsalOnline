@@ -3,7 +3,6 @@
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,23 +13,23 @@ datasource db {
 }
 
 model Users {
-  id BigInt @id @default(autoincrement())
-  nickname String @unique
-  password String 
-  userName String
+  id                BigInt    @id @default(autoincrement()) @map("id")
+  nickname          String    @unique @map("nickname")
+  password          String    @map("password")
+  userName          String    @map("userName")
 
-  UserAccount UserAccount?
-  userTeams UserTeams[]
-  matches Matches[]
-  
+  UserAccount       UserAccount?
+  userTeams         UserTeams[]
+  matchesAsUser1    Matches[]    @relation("User1Matches")
+  matchesAsUser2    Matches[]    @relation("User2Matches")  
 
   @@map("Users")
 }
 
 model UserAccount {
-  id BigInt @id @default(autoincrement())
-  userId BigInt @unique
-  cash BigInt @default(0)
+  id      BigInt    @id @default(autoincrement())   @map("id")
+  userId  BigInt    @unique       @map("userId")
+  cash    BigInt    @default(0)  @map("cash")
 
   user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -38,9 +37,9 @@ model UserAccount {
 }
 
 model UserTeams {
-  id BigInt @id @default(autoincrement())
-  userId BigInt 
-  playerId BigInt
+  id        BigInt    @id @default(autoincrement())   @map("id")
+  userId    BigInt    @map("userId")
+  playerId  BigInt    @map("playerId")
 
 
   userSquads UserSquads[]
@@ -52,53 +51,52 @@ model UserTeams {
 }
 
 model UserSquads {
-  id  BigInt @id @default(autoincrement())
-  userTeamId BigInt
+  id          BigInt    @id @default(autoincrement())   @map("id")
+  userTeamId  BigInt    @map("userTeamId")
   
   userteam UserTeams @relation(fields: [userTeamId],references: [id], onDelete: Cascade, onUpdate: Cascade)
   @@map("UserSquads")
 }
 
 model Players { 
-  id BigInt @id @default(autoincrement())
-  playerName String @unique
-  playerStatus BigInt
+  id                BigInt              @id @default(autoincrement())   @map("id")
+  playerName        String              @map("playerName")
 
-  userTeams UserTeams[]
-  playerStatus1 playerStatus?
-
+  userTeams         UserTeams[]
+  playerStats       PlayerStats?       
 
   @@map("Players")
 }
 
 
-
 model Matches { 
-  id Int @id @default(autoincrement())
-  matchDate DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  matchUser1 BigInt 
-  matchUser2 BigInt
-  matchResult WINRESULT
+  id                BigInt             @id @default(autoincrement()) @map("id")
+  matchDate         DateTime        @default(now()) @map("matchDate")
+  updatedAt         DateTime        @updatedAt  @map("updatedAt")
+  matchUserId1      BigInt        @map("matchUserId1")
+  matchUserId2      BigInt        @map("matchUserId2")
+  matchResult       WINRESULT       @map("matchResult")
 
-  users Users @relation( fields: [matchUser1], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user1             Users        @relation("User1Matches", fields: [matchUserId1], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user2             Users        @relation("User2Matches", fields: [matchUserId2], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("Matches")
 }
 
-model playerStatus {
-  id BigInt @id @default(autoincrement())
-  playerId BigInt @unique
-  technique BigInt @default(0)
-  pass BigInt @default(0)
-  agility BigInt @default(0)
-  defense BigInt @default(0)
-  finishing BigInt @default(0)
-  stamina BigInt @default(0)
+
+model PlayerStats {
+  id          BigInt    @id @default(autoincrement()) @map("id")
+  playerId    BigInt    @unique @map("playerId")
+  technique   BigInt    @default(0)   @map("technique")
+  pass        BigInt    @default(0)   @map("pass")
+  agility     BigInt    @default(0)   @map("agility")
+  defense     BigInt    @default(0)   @map("defense")
+  finishing   BigInt    @default(0)   @map("finishing")
+  stamina     BigInt    @default(0)   @map("stamina")
 
   players Players @relation(fields: [playerId], references: [id], onDelete: Cascade,onUpdate: Cascade)
 
-  @@map("playerStatus")
+  @@map("PlayerStats")
 }
 
 enum WINRESULT {
