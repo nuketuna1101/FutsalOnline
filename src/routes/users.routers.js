@@ -11,6 +11,9 @@ import { prisma } from '../utils/prisma/index.js';
 
 const router = express.Router();
 
-/* TO DO */
+router.post('/gatcha', async (req, res)=>{
+    
+})
+
 
 export default router;
