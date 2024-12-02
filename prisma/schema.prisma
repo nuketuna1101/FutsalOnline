@@ -18,18 +18,10 @@ model Users {
   password          String    @map("password")
   userName          String    @map("userName")
 
-<<<<<<< HEAD
   UserAccount       UserAccount?
   userTeams         UserTeams[]
   matchesAsUser1    Matches[]    @relation("User1Matches")
   matchesAsUser2    Matches[]    @relation("User2Matches")  
-=======
-  UserAccount UserAccount?
-  userTeams UserTeams[]
-  matches Matches[] @relation("firstUser")
-  matches2 Matches[] @relation("secondUser")
-  
->>>>>>> bcf5ae0c1c5053b738cd560051942c80d73e5aef
 
   @@map("Users")
 }
@@ -85,13 +77,8 @@ model Matches {
   matchUserId2      BigInt        @map("matchUserId2")
   matchResult       WINRESULT       @map("matchResult")
 
-<<<<<<< HEAD
   user1             Users        @relation("User1Matches", fields: [matchUserId1], references: [id], onDelete: Cascade, onUpdate: Cascade)
   user2             Users        @relation("User2Matches", fields: [matchUserId2], references: [id], onDelete: Cascade, onUpdate: Cascade)
-=======
-  users Users @relation("firstUser", fields: [matchUser1], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  users2 Users @relation("secondUser", fields: [matchUser2], references: [id], onDelete: Cascade, onUpdate: Cascade)
->>>>>>> bcf5ae0c1c5053b738cd560051942c80d73e5aef
 
   @@map("Matches")
 }
