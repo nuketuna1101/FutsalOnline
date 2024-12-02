@@ -21,7 +21,8 @@ model Users {
 
   UserAccount UserAccount?
   userTeams UserTeams[]
-  matches Matches[]
+  matches Matches[] @relation("firstUser")
+  matches2 Matches[] @relation("secondUser")
   
 
   @@map("Users")
@@ -81,7 +82,8 @@ model Matches {
   matchUser2 BigInt
   matchResult WINRESULT
 
-  users Users @relation( fields: [matchUser1], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  users Users @relation("firstUser", fields: [matchUser1], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  users2 Users @relation("secondUser", fields: [matchUser2], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("Matches")
 }
