@@ -15,7 +15,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT_NUMBER;
+const PORT = process.env.DATABASE_PORT;
 
 // Middlewares
 app.use(LoggingMiddleware);
