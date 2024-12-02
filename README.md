@@ -90,36 +90,7 @@ npx prisma db push
 
 ## 필수 기능 API
 
-- Sign up
-- Log in
-- Purchase Cash
-- LoadData
-- RandDraft (Gacha)
-- BuildSquad
-<br>
-- /* GAME LOGIC */
-
-
-
-
-명세
-
->>
-
-라우트
-
-앤드포인트
-
-인증 여부
-
-URI param
-
-request
-
-response
-
-로직
-
+- 추후 노션에 있는 정보 업데이트
 
 
 ## 게임로직
