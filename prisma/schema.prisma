@@ -14,24 +14,23 @@ datasource db {
 }
 
 model Users {
-  id BigInt @id @default(autoincrement())
+  id       BigInt @id @default(autoincrement())
   nickname String @unique
-  password String 
+  password String
   userName String
 
   UserAccount UserAccount?
-  userTeams UserTeams[]
-  matches Matches[] @relation("firstUser")
-  matches2 Matches[] @relation("secondUser")
-  
+  userTeams   UserTeams[]
+  matches     Matches[]    @relation("firstUser")
+  matches2    Matches[]    @relation("secondUser")
 
   @@map("Users")
 }
 
 model UserAccount {
-  id BigInt @id @default(autoincrement())
+  id     BigInt @id @default(autoincrement())
   userId BigInt @unique
-  cash BigInt @default(0)
+  cash   BigInt @default(0)
 
   user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -39,66 +38,62 @@ model UserAccount {
 }
 
 model UserTeams {
-  id BigInt @id @default(autoincrement())
-  userId BigInt 
+  id       BigInt @id @default(autoincrement())
+  userId   BigInt
   playerId BigInt
 
-
   userSquads UserSquads[]
-  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  players Players @relation(fields: [playerId],references: [id], onDelete: Cascade, onUpdate: Cascade)
-
+  user       Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  players    Players      @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("UserTeams")
 }
 
 model UserSquads {
-  id  BigInt @id @default(autoincrement())
+  id         BigInt @id @default(autoincrement())
   userTeamId BigInt
-  
-  userteam UserTeams @relation(fields: [userTeamId],references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  userteam UserTeams @relation(fields: [userTeamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
   @@map("UserSquads")
 }
 
-model Players { 
-  id BigInt @id @default(autoincrement())
-  playerName String @unique
+model Players {
+  id           BigInt @id @default(autoincrement())
+  playerName   String @unique
   playerStatus BigInt
 
-  userTeams UserTeams[]
+  userTeams     UserTeams[]
   playerStatus1 playerStatus?
-
 
   @@map("Players")
 }
 
-
-
-model Matches { 
-  id Int @id @default(autoincrement())
-  matchDate DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  matchUser1 BigInt 
-  matchUser2 BigInt
+model Matches {
+  id          Int       @id @default(autoincrement())
+  matchDate   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  matchUser1  BigInt
+  matchUser2  BigInt
   matchResult WINRESULT
 
-  users Users @relation("firstUser", fields: [matchUser1], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  users  Users @relation("firstUser", fields: [matchUser1], references: [id], onDelete: Cascade, onUpdate: Cascade)
   users2 Users @relation("secondUser", fields: [matchUser2], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("Matches")
 }
 
 model playerStatus {
-  id BigInt @id @default(autoincrement())
-  playerId BigInt @unique
+  id        BigInt @id @default(autoincrement())
+  playerId  BigInt @unique
   technique BigInt @default(0)
-  pass BigInt @default(0)
-  agility BigInt @default(0)
-  defense BigInt @default(0)
+  pass      BigInt @default(0)
+  agility   BigInt @default(0)
+  defense   BigInt @default(0)
   finishing BigInt @default(0)
-  stamina BigInt @default(0)
+  stamina   BigInt @default(0)
 
-  players Players @relation(fields: [playerId], references: [id], onDelete: Cascade,onUpdate: Cascade)
+  players Players @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("playerStatus")
 }
