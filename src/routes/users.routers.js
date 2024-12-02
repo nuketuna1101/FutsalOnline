@@ -6,8 +6,6 @@
 //====================================================================================================================
 
 import express from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma/index.js';
 import dotenv from 'dotenv';
 
