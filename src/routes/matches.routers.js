@@ -199,8 +199,8 @@ router.get('/matches/latest', authMiddleware, async (req, res, next) => {
             },
             orderBy: { matchDate: 'desc' },
             include: {
-                user1: { select: { nickname: true } }, // matchUserId1의 닉네임 포함
-                user2: { select: { nickname: true } }, // matchUserId2의 닉네임 포함
+                user1: { select: { nickname: true } },
+                user2: { select: { nickname: true } }, 
             },
         });
 
@@ -226,7 +226,7 @@ router.get('/matches/latest', authMiddleware, async (req, res, next) => {
 router.get('/matches/recent', authMiddleware, async (req, res, next) => {
     // auth로부터 user id가져오기
     const { userId } = req.user;
-    // 쿼리 파라미터에서 가져온 count (default: 10) // 추후에 config에 뺄 것
+    // 쿼리 파라미터에서 가져온 count (default 및 최대제약: 10) // 추후에 config에 뺄 것
     const count = parseInt(req.query.count, 10) || 10;
     try {
         // 유저의 최근 10경기 매치 결과 가져오기
@@ -240,8 +240,8 @@ router.get('/matches/recent', authMiddleware, async (req, res, next) => {
             orderBy: { matchDate: 'desc' },
             take: count,
             include: {
-                user1: { select: { nickname: true } }, // matchUserId1의 닉네임 포함
-                user2: { select: { nickname: true } }, // matchUserId2의 닉네임 포함
+                user1: { select: { nickname: true } }, 
+                user2: { select: { nickname: true } },
             },
         });
 
