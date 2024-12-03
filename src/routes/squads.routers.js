@@ -42,47 +42,59 @@ router.post('/squads', async (req,res,next)=>{
         //일단은 players list에서 먼저 받아오고 그 다음에 데이터가 채워지면 teams에서 받아오도록 하자.
         const squadTransaction = await prisma.$transaction(async (tx)=>{
             const allSquard = await tx.userSquads.findMany({});
-            console.log(allSquard);
+            let squad_list = [];
+            for(let i = 0;i<allSquard.length;i++)
+            {
+                squad_list.push(allSquard[i].userTeamId);
+            }
+
+            console.log(squad_list);
             let re_list = [];
 
-            for(let i = 0;i<allSquard.length;i++)
+            for(let i = 0;i<squad_list.length;i++)
             {
                 const squadedCharacter = await tx.userTeams.findFirst({
                     where : {
                         userId : 3,
-                        id : allSquard[i].userTeamId
+                        id : squad_list[i]
                     }
                 })
                 re_list.push(squadedCharacter);
             }
 
-            return re_list;
+            console.log(re_list);
 
+            const deletedSquad = await tx.userSquads.deleteMany({
+                where : {
+                    userTeamId : {
+                        in : squad_list
+                    }
+                }
+            })
 
-
-            // const currentTeamSqard = await tx.userTeams.findMany({
-            //     where : {
-            //         userId : 3 //나중에 userid를 받아서 그걸로 바꾸도록 하자.
-            //     }
-            // });
-            // for(let i of Object.values(testsquard))
-            // {
-            //     await tx.userSquads.create({
-            //         data : {
-            //             userteam : {
-            //                 connect : {
-            //                     id : i
-            //                 }
-            //             }
-            //         }
-            //     })
-            // }
+            const currentTeamSqard = await tx.userTeams.findMany({
+                where : {
+                    userId : 3 //나중에 userid를 받아서 그걸로 바꾸도록 하자.
+                }
+            });
+            for(let i of Object.values(testsquard))
+            {
+                await tx.userSquads.create({
+                    data : {
+                        userteam : {
+                            connect : {
+                                id : i
+                            }
+                        }
+                    }
+                })
+            }
 
             
 
             
 
-            // return [currentTeamSqard];
+            return [currentTeamSqard];
         })
 
         // if(!squadTransaction)
