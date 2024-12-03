@@ -12,8 +12,51 @@ import express from "express";
 import { prisma } from "../utils/prisma/index.js";
 import Authmiddleware from "../middlewares/auth.middleware.js";
 
+
+// model Players {
+//   id          Int          @id @default(autoincrement()) @map("id")
+//   playerName  String       @map("playerName")
+//   playerStats PlayerStats?
+//   userTeams   UserTeams[]
+
+//   @@map("Players")
+// }
+
+// model PlayerStats {
+//   id        Int     @id @default(autoincrement()) @map("id")
+//   playerId  Int     @unique @map("playerId")
+//   technique Int     @default(0) @map("technique")
+//   pass      Int     @default(0) @map("pass")
+//   agility   Int     @default(0) @map("agility")
+//   defense   Int     @default(0) @map("defense")
+//   finishing Int     @default(0) @map("finishing")
+//   stamina   Int     @default(0) @map("stamina")
+//   players   Players @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+//   @@map("PlayerStats")
+// }
+
+
 const router = express.Router();
 /* TO DO */
+
+router.post("/players", Authmiddleware,async (req,res)=>{
+    const {playerName, playerStatus} = req.body;
+
+    const player = prisma.$transaction(async (tx)=>{
+      const player = await tx.players.create({
+        playerName : playerName,
+        PlayerStatus : playerStatus
+      })
+      const playerinfo = await prisma.playerStatus.create({
+        data : {
+          playerId : {
+            
+          }
+        }
+      })
+      })
+})
 
 //선수 리스트에서 한명 검색
 router.get("/players/:playerId", async (req, res, next) => {
@@ -32,7 +75,7 @@ router.get("/players", async (req, res, next) => {
   }
 });
 
-router.get("/players?userId = my", Authmiddleware, async (req, res, next) => {
+router.get("/players?userId", Authmiddleware, async (req, res, next) => {
   try {
   } catch (err) {
     next(err);

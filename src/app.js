@@ -10,6 +10,7 @@ import usersRouter from './routes/users.routers.js';
 import playersRouter from './routes/players.routers.js';
 import matchesRouter from './routes/matches.routers.js';
 import squadsRouter from './routes/squads.routers.js';
+import gatchaRouter from './routes/gatcha.router.js'
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -21,7 +22,7 @@ const PORT = process.env.DATABASE_PORT;
 app.use(LoggingMiddleware);
 app.use(express.json());
 app.use(cookieParser());
-app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter]);
+app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter]);
 app.use(ErrorHandlingMiddleware);
 
 

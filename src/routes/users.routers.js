@@ -8,75 +8,113 @@
 import express from 'express';
 import { prisma } from '../utils/prisma/index.js';
 import userAuth from '../middlewares/auth.middleware.js'
+import Jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
 
 const router = express.Router();
-const gatchaPay = 100;
-// model UserSquads { 
-//     id          BigInt    @id @default(autoincrement())   @map("id")
-//     userTeamId  BigInt    @map("userTeamId")
-    
-//     userteam UserTeams @relation(fields: [userTeamId],references: [id], onDelete: Cascade, onUpdate: Cascade)
-//     @@map("UserSquads")
-//   }
 
-// model UserTeams {
-//     id        BigInt    @id @default(autoincrement())   @map("id")
-//     userId    BigInt    @map("userId")
-//     playerId  BigInt    @map("playerId")
-  
-//     userSquads UserSquads[]
-//     user       Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-//     players    Players      @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  
-//     @@map("UserTeams")
-//   }
 
-//가챠 뽑기 API
-router.post('/gatcha',userAuth, async (req, res) => {
+
+const hashPassword = async (password) => await bcrypt.hash(password, 10);
+const verifyPassword = async (password, hashedPassword) => await bcrypt.compare(password, hashedPassword);
+
+router.post('/sign-up', async (req, res) => {
     try {
-        const userid = parseInt(req.userid,10);
-        let [playerName,cash] = await prisma.$transaction(async (tx)=>{
-            let playerList = await tx.players.findMany({
+        const { username,nickname, password } = req.body;
+        const configPassword = /[a-zA-Z0-9]{6,29}/;
 
-            });
-    
-            let random_count = Math.floor(Math.random() * playerList.length);
-            
-            
-            let userteam = await tx.userTeams.create({
-                data : {
-                    userId : userid,
-                    playerId : playerList[random_count].id
-                }
-                
-            })
+        if (!configPassword.test(password)) {
+            throw new Error("비밀번호가 잘못되었습니다.")
+        }
 
-            const updatedUser = await tx.userAccount.update({
-                where : {
-                    id : userid
-                },
-                data : {
-                    cash : {
-                        decrement : gatchaPay
-                    }
-                }
-            })
-            
-            return [playerList[random_count].playerName, updatedUser.cash]
+
+
+        const inputPassword = await hashPassword(password);
+
+        const user = await prisma.users.create({
+            data : {
+                userName : username,
+                nickname : nickname,
+                password : inputPassword,
+            }
         })
 
+        return res.status(201).json({data : "유저 생성"});
 
-        
-
-
-        return res.status(200).json({Message : ` ${playerName} 를 뽑았습니다. 잔액 ${cash} ` })
     }
     catch (err) {
-        next(err);
+        return res.status(404).json({data : err});
     }
 
 
 })
+
+
+router.get('/sign-in', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const count = req.query.check;
+
+        //const configPassword = /[a-zA-Z0-9]{6,29}/;
+
+        const user = await prisma.users.findFirst({
+            where : {
+                userName : username
+            }
+        })
+
+
+
+        
+
+        if(!user)
+        {
+            return res.status(404).json({err : "유저가 없음"});
+        }
+        else if(!verifyPassword(user.password,password))
+        {
+            return res.status(404).json("비밀번호 틀림");
+        }
+        
+
+        const token = Jwt.sign(
+            {
+              userId: user.nickname,
+            },
+            process.env.SESSION_SECRET_KEY,
+          );
+      
+        res.cookie('authorization', `Bearer ${token}`);
+
+        return res.status(201).json({data : "로그인 성공"});
+
+    }
+    catch (err) {
+        return res.status(404).json({error : err});
+    }
+
+
+})
+
+router.get('/users', async (req,res) => {
+    try
+    {
+        const userlist = await prisma.users.findMany({});
+        console.log(userlist);
+    
+        return res.status(201).json({data : "확인"});
+    
+    }
+    catch(err)
+    {
+        return res.status(404).json({data : err});
+    }
+    
+})
+
+
+
+
 
 
 

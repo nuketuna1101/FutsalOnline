@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,86 +8,83 @@ datasource db {
 }
 
 model Users {
-  id                BigInt    @id @default(autoincrement()) @map("id")
-  nickname          String    @unique @map("nickname")
-  password          String    @map("password")
-  userName          String    @map("userName")
-
-  UserAccount       UserAccount?
-  userTeams         UserTeams[]
-  matchesAsUser1    Matches[]    @relation("User1Matches")
-  matchesAsUser2    Matches[]    @relation("User2Matches")  
+  id             Int          @id @default(autoincrement()) @map("id")
+  nickname       String       @unique @map("nickname")
+  password       String       @map("password")
+  userName       String       @map("userName")
+  matchesAsUser1 Matches[]    @relation("User1Matches")
+  matchesAsUser2 Matches[]    @relation("User2Matches")
+  UserAccount    UserAccount?
+  userTeams      UserTeams[]
 
   @@map("Users")
 }
 
 model UserAccount {
-  id      BigInt    @id @default(autoincrement())   @map("id")
-  userId  BigInt    @unique       @map("userId")
-  cash    BigInt    @default(0)  @map("cash")
-
-  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id     Int   @id @default(autoincrement()) @map("id")
+  userId Int   @unique @map("userId")
+  cash   Int   @default(0) @map("cash")
+  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("UserAccount")
 }
 
 model UserTeams {
-  id        BigInt    @id @default(autoincrement())   @map("id")
-  userId    BigInt    @map("userId")
-  playerId  BigInt    @map("playerId")
-
+  id         Int          @id @default(autoincrement()) @map("id")
+  userId     Int          @map("userId")
+  playerId   Int          @map("playerId")
   userSquads UserSquads[]
-  user       Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  players    Players      @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  players    Players      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user       Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([playerId], map: "UserTeams_playerId_fkey")
+  @@index([userId], map: "UserTeams_userId_fkey")
   @@map("UserTeams")
 }
 
-model UserSquads { 
-  id          BigInt    @id @default(autoincrement())   @map("id")
-  userTeamId  BigInt    @map("userTeamId")
-  
-  userteam UserTeams @relation(fields: [userTeamId],references: [id], onDelete: Cascade, onUpdate: Cascade)
+model UserSquads {
+  id         Int       @id @default(autoincrement()) @map("id")
+  userTeamId Int       @map("userTeamId")
+  userteam   UserTeams @relation(fields: [userTeamId], references: [id], onDelete: Cascade)
+
+  @@index([userTeamId], map: "UserSquads_userTeamId_fkey")
   @@map("UserSquads")
 }
 
-model Players { 
-  id                BigInt              @id @default(autoincrement())   @map("id")
-  playerName        String              @map("playerName")
-
-  userTeams         UserTeams[]
-  playerStats       PlayerStats?       
+model Players {
+  id          Int          @id @default(autoincrement()) @map("id")
+  playerName  String       @map("playerName")
+  playerStats PlayerStats?
+  userTeams   UserTeams[]
 
   @@map("Players")
 }
 
+model Matches {
+  id           Int       @id @default(autoincrement()) @map("id")
+  matchDate    DateTime  @default(now()) @map("matchDate")
+  updatedAt    DateTime  @updatedAt @map("updatedAt")
+  matchUserId1 Int       @map("matchUserId1")
+  matchUserId2 Int       @map("matchUserId2")
+  matchResult  WINRESULT @map("matchResult")
+  user1        Users     @relation("User1Matches", fields: [matchUserId1], references: [id], onDelete: Cascade)
+  user2        Users     @relation("User2Matches", fields: [matchUserId2], references: [id], onDelete: Cascade)
 
-model Matches { 
-  id                BigInt             @id @default(autoincrement()) @map("id")
-  matchDate         DateTime        @default(now()) @map("matchDate")
-  updatedAt         DateTime        @updatedAt  @map("updatedAt")
-  matchUserId1      BigInt        @map("matchUserId1")
-  matchUserId2      BigInt        @map("matchUserId2")
-  matchResult       WINRESULT       @map("matchResult")
-
-  user1             Users        @relation("User1Matches", fields: [matchUserId1], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  user2             Users        @relation("User2Matches", fields: [matchUserId2], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
+  @@index([matchUserId1], map: "Matches_matchUserId1_fkey")
+  @@index([matchUserId2], map: "Matches_matchUserId2_fkey")
   @@map("Matches")
 }
 
-
 model PlayerStats {
-  id          BigInt    @id @default(autoincrement()) @map("id")
-  playerId    BigInt    @unique @map("playerId")
-  technique   BigInt    @default(0)   @map("technique")
-  pass        BigInt    @default(0)   @map("pass")
-  agility     BigInt    @default(0)   @map("agility")
-  defense     BigInt    @default(0)   @map("defense")
-  finishing   BigInt    @default(0)   @map("finishing")
-  stamina     BigInt    @default(0)   @map("stamina")
-
-  players Players @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id        Int     @id @default(autoincrement()) @map("id")
+  playerId  Int     @unique @map("playerId")
+  technique Int     @default(0) @map("technique")
+  pass      Int     @default(0) @map("pass")
+  agility   Int     @default(0) @map("agility")
+  defense   Int     @default(0) @map("defense")
+  finishing Int     @default(0) @map("finishing")
+  stamina   Int     @default(0) @map("stamina")
+  players   Players @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@map("PlayerStats")
 }
