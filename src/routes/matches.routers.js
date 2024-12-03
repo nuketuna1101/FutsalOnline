@@ -61,14 +61,14 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
         });
         */
         // renewal: 이후에 유저가 여러개의 팀을 가지더라도 가능하게끔
-        const userTeams = await prisma.userTeams.findMany({ 
-            where: { userId } 
+        const userTeams = await prisma.userTeams.findMany({
+            where: { userId }
         });
         if (userTeams.length === 0)
             return res.status(404).json({ message: '[Not Found] 유저 팀 찾지못함' });
 
-        const opponentTeams = await prisma.userTeams.findMany({ 
-            where: { userId: randomOpponent.id } 
+        const opponentTeams = await prisma.userTeams.findMany({
+            where: { userId: randomOpponent.id }
         });
         if (opponentTeams.length === 0)
             return res.status(404).json({ message: '[Not Found] 상대 팀 찾지못함' });
@@ -136,7 +136,7 @@ router.post('/matches/:playerId', authMiddleware, async (req, res, next) => {
 
 //====================================================================================================================
 //====================================================================================================================
-// 직전 경기 결과 조회 API
+// 유저가 치른 직전 경기 결과 조회 API
 // URL: /api/matches/latest
 // method: GET
 // auth: 인증 필요
@@ -148,18 +148,25 @@ router.get('/matches/latest', authMiddleware, async (req, res, next) => {
     const { userId } = req.user;
     try {
         // 유저의 최근 10경기 매치 결과 가져오기
-        const recentMatches = await prisma.matches.findMany({
-            /* todo */
-            //where: { matchUserId1: },
+        const latestMatch = await prisma.matches.findFirst({
+            where: {
+                OR: [
+                    { matchUserId1: userId },
+                    { matchUserId2: userId },
+                ],
+            },
             orderBy: { matchDate: 'desc' },
-            take: 10,
+            include: {
+                user1: { select: { nickname: true } }, // matchUserId1의 닉네임 포함
+                user2: { select: { nickname: true } }, // matchUserId2의 닉네임 포함
+            },
         });
 
         // validation: 매치기록이 아예 없을 경우
-        if (recentMatches.length === 0)
-            return res.status(200).json({ message: '최근 매치기록이 없습니다.', });
+        if (!latestMatch)
+            return res.status(200).json({ message: '마지막으로 치른 매치기록 로드 실패', });
 
-        return res.status(200).json({ recentMatches });
+        return res.status(200).json({ latestMatch });
 
     } catch (error) {
         next(error);
@@ -181,9 +188,18 @@ router.get('/matches/recent?count=10', authMiddleware, async (req, res, next) =>
         // 유저의 최근 10경기 매치 결과 가져오기
         const recentMatches = await prisma.matches.findMany({
             /* todo */
-            //where: { matchUserId1: },
+            where: {
+                OR: [
+                    { matchUserId1: userId },
+                    { matchUserId2: userId },
+                ],
+            },
             orderBy: { matchDate: 'desc' },
             take: 10,
+            include: {
+                user1: { select: { nickname: true } }, // matchUserId1의 닉네임 포함
+                user2: { select: { nickname: true } }, // matchUserId2의 닉네임 포함
+            },
         });
 
         // validation: 매치기록이 아예 없을 경우

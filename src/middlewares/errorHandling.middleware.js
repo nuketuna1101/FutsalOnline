@@ -6,10 +6,5 @@
 //====================================================================================================================
 export default function (err, req, res, next) {
     console.error(err);
-    loggers.error({
-        message: '[Error] ehm found error',
-        error: err.message,
-        stack: err.stack,
-    });
     res.status(500).json({ errorMessage: '[Error] Server internal error.' });
 }
