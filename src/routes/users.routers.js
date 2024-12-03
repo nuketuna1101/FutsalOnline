@@ -13,23 +13,26 @@ import authMiddleware from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 // 회원가입
-router.post('/api/users/sign-up', async (req, res, next) => {
+router.post('/users/sign-up', async (req, res, next) => {
     try {
         const { userName, password, nickname } = req.body;
 
-        const isExistId = await prisma.user.findFirst({
+        const isExistId = await prisma.users.findFirst({
             where: { nickname }
         });
         // 아이디, 비밀번호 영어소문자 + 숫자 유효성검사용 변수
-        let engPlusNum = /^[a-z0-9]$/;
+        function conLowAndNumber(input) {
+            const regex = /^(?=.*[a-z])(?=.*[0-9]).+$/; // 영어 소문자와 숫자가 모두 포함된 문자열
+            return regex.test(input);
+        }
 
         if (isExistId) {
             return res.status(409).json({ Message: '이미 존재하는 아이디입니다.' });
-        } else if (engPlusNum.test(nickName) === false) {
+        } else if (conLowAndNumber(nickname) === false) {
             return res.status(401).json({ Message: '아이디는 영어소문자 + 숫자로 이루어져야합니다.' })
         } else if (password.length <= 5) {
             return res.status(401).json({ Message: '비밀번호는 6자리 이상이어야 합니다.' });
-        } else if (engPlusNum.test(password) === false) {
+        } else if (conLowAndNumber(password) === false) {
             return res.status(401).json({ Message: '비밀번호는 영어소문자 + 숫자로 이루어져야합니다.' })
         }
 
@@ -37,16 +40,17 @@ router.post('/api/users/sign-up', async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [Users, UserAccount] = await prisma.$transaction(async (tx) => {
-            const users = await tx.user.create({
+            const users = await tx.users.create({
                 data: {
                     nickname,
                     password: hashedPassword,
-                    userName: userName,
+                    userName,
                 }
             });
 
-            const userAccount = await tx.user.create({
+            const userAccount = await tx.users.create({
                 data: {
+                    userId: users.id,
                     cash: 5000,
                 }
             });
@@ -57,16 +61,16 @@ router.post('/api/users/sign-up', async (req, res, next) => {
     } catch (err) {
         next(err);
     }
-
+    const { nickname, userName } = req.body;
     return res.status(201).json({ Message: `회원가입완료 ${nickname}, ${userName}` })
 });
 
 // 로그인
-router.post('/api/users/sign-in', async (req, res, next) => {
+router.post('/users/sign-in', async (req, res, next) => {
     try {
         const { nickname, password } = req.body;
 
-        const user = await prisma.user.findFirst({
+        const user = await prisma.users.findFirst({
             where: { nickname }
         })
 
@@ -81,7 +85,7 @@ router.post('/api/users/sign-in', async (req, res, next) => {
             {
                 nickname: user.nickname,
             },
-            'futsal-secret-key',
+            'custom-secret-key',
             {
                 expiresIn: '10m'
             }
@@ -93,14 +97,25 @@ router.post('/api/users/sign-in', async (req, res, next) => {
     res.cookie('authMiddleware', `Bearer ${token}`);
     return res.status(200).json({ Message: `${nickname} 로그인 성공` });
 });
+
 // 캐시 지급
-router.post('api/users/cash', authMiddleware, async (req, res, next) => {
+router.post('/users/cash', authMiddleware, async (req, res, next) => {
     try{
-        
+        const { cash } = req.body;
+
+        const addCash = await prisma.users.update({
+            where: { id: id },
+            data: {
+                cash: {
+                    // 캐시얻는 양을 부여할 값
+                    increment: cash.increment,
+                },
+            },
+        });
+        return res.status(201).json({ Message: `${addCash}를 얻었습니다.` });
     }catch(err){
         next(err);
     }
-
-})
+});
 
 export default router;

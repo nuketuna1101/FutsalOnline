@@ -21,7 +21,7 @@ export default async function (req, res, next) {
         const [tokenType, token] = authorization.split(' ');
         if (tokenType !== 'Bearer') throw new Error('토큰 타입이 일치하지 않습니다.');
 
-        const decodedToken = jwt.verify(token, 'futsal-secret-key');
+        const decodedToken = jwt.verify(token, 'custom-secret-key');
         const id = decodedToken.id;
 
         const user = await prisma.users.findFirst({
