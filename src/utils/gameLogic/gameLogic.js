@@ -43,7 +43,7 @@ const getCachedStats = (squad) => squad.userteam.players.map(player => ({
 
 // x, y 인자를 받고 랜덤하게 확률 결과
 const getRandOut = (x, y) => {
-    const rand = crypto.randomInt(0, x + y);
+    const rand = crypto.randomInt(0, Math.floor(x + y));
     return (rand <= x);
 };
 
