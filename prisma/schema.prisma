@@ -31,7 +31,7 @@ model UserAccount {
   userId  Int      @unique       @map("userId")
   cash    Int      @default(0)  @map("cash")
 
-  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user    Users    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("UserAccount")
 }
