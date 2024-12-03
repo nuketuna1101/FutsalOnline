@@ -11,36 +11,6 @@ import bcrypt from "bcrypt";
 
 dotenv.config();
 
-const SECRET_KEY = "your-secret-key"; // Access Token Secret
-const REFRESH_SECRET_KEY = "your-refresh-secret-key"; // Refresh Token Secret
-
-// 1. 비밀번호 암호화 및 검증 (기존 코드 유지)
-const hashPassword = async (password) => await bcrypt.hash(password, 10);
-const verifyPassword = async (password, hashedPassword) =>
-  await bcrypt.compare(password, hashedPassword);
-
-// 2. Access Token 생성
-const generateAccessToken = (user) => {
-  return jwt.sign({ id: user.id, email: user.email }, SECRET_KEY, {
-    expiresIn: "15m",
-  }); // 15분 유효
-};
-
-// 3. Refresh Token 생성
-const generateRefreshToken = (user) => {
-  return jwt.sign({ id: user.id, email: user.email }, REFRESH_SECRET_KEY, {
-    expiresIn: "7d",
-  }); // 7일 유효
-};
-
-// 4. Refresh Token 검증
-const verifyRefreshToken = (token) => {
-  try {
-    return jwt.verify(token, REFRESH_SECRET_KEY);
-  } catch (err) {
-    return null;
-  }
-};
 
 export default async function (req, res, next) {
   /* TODO */
