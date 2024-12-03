@@ -41,9 +41,9 @@ model UserTeams {
   userId    Int      @map("userId")
   playerId  Int      @map("playerId")
 
-  userSquads  UserSquads[]
-  user        Users     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  players     Players   @relation(fields: [playerId],references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userSquads UserSquads[]
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  players Players @relation(fields: [playerId],references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("UserTeams")
 }
