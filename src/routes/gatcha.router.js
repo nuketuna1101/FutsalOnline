@@ -12,45 +12,52 @@ const gatchaPay = 100;
 //가챠 뽑기 API
 router.post('/gatcha', async (req, res, next) => {
     try {
+        //const players = await prisma.users.findMany({});
+
         //const userid = parseInt(req.userid, 10);
-        // let [playerName, cash] = await prisma.$transaction(async (tx) => {
-        //     let playerList = await tx.players.findMany({
+        let [playerName, cash] = await prisma.$transaction(async (tx) => {
+            let playerList = await tx.players.findMany({
 
-        //     });
+            });
 
-        //     let random_count = Math.floor(Math.random() * playerList.length);
-
-
-        //     let userteam = await tx.userTeams.create({
-        //         data: {
-        //             userId: {
-        //                 connect : {
-        //                     id : 1
-        //                 }
-        //             },
-        //             playerId: playerList[random_count].id
-        //         }
-
-        //     })
-
-        //     const updatedUser = await tx.userAccount.update({
-        //         where: {
-        //             id: userid
-        //         },
-        //         data: {
-        //             cash: {
-        //                 decrement: gatchaPay
-        //             }
-        //         }
-        //     })
-
-        //     return [playerList[random_count].playerName, updatedUser.cash]
-        // })
+            let random_count = Math.floor(Math.random() * playerList.length);
 
 
+            let userteam = await tx.userTeams.create({
+                data: {
+                    players : {
+                        connect : {
+                            id : playerList[random_count].id
+                        }
+                    },
+                    user : {
+                        connect : {
+                            id : 3
+                        }
+                    },
+                },
 
+            })
 
-        //return res.status(200).json({ Message: ` ${playerName} 를 뽑았습니다. 잔액 ${cash} ` })
+            const updatedUser = await tx.userAccount.update({
+                where : {
+                    userId : 3
+                },
+                data: {
+                    cash: {
+                        decrement: gatchaPay
+                    }
+                }
+            })
+
+            if(updatedUser.cash < 0)
+            {
+                return res.status(404).json({ Message: ` No Money ` })
+            }
+
+            return [playerList[random_count], 100]
+        })
+        return res.status(200).json({ Message: ` ${playerName.playerName} 를 뽑았습니다. 잔액 ${cash} ` })
     }
     catch (err) {
         next(err);

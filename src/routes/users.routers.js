@@ -31,12 +31,25 @@ router.post('/sign-up', async (req, res) => {
 
         const inputPassword = await hashPassword(password);
 
-        const user = await prisma.users.create({
-            data : {
-                userName : username,
-                nickname : nickname,
-                password : inputPassword,
-            }
+        const user = await prisma.$transaction(async (tx)=>{
+            const inputUser = await tx.users.create({
+                data : {
+                    userName : username,
+                    nickname : nickname,
+                    password : inputPassword,
+                }
+            });
+
+            await tx.userAccount.create({
+                data : {
+                    user : {
+                        connect : {
+                            id : inputUser.id
+                        }
+                    },
+                    cash : 10000
+                }
+            })
         })
 
         return res.status(201).json({data : "유저 생성"});
