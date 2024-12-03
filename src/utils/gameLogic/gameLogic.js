@@ -29,6 +29,40 @@ const simulateMomentum = () => {
 
 };
 
+// 공수 결정
+const determineAtkPos = (squad1, squad2) => {
+    // 공격과 수비의 결정은 양팀의 (패스 + 주력/가속)의 능력치가 결정. (초기 설정계수: 0.65, 0.35)
+    // const sqaud1Param = squad1.pass 
 
+
+    const cachedStats = [
+        // 스쿼드1 데이터
+        ...userSquad1.map(squad => ({
+            squadId: squad.id,
+            players: squad.userteam.players.map(player => ({
+                playerId: player.id,
+                stamina: player.playerStats.stamina,
+                // 전처리 계산값 캐싱: 공격권 결정 변수, 공격 변수, 수비 변수
+                paramAtkPos: 0.65 * player.playerStats.pass + 0.35 * player.playerStats.pace,
+                paramAtk: 0.5 * player.playerStats.finishing + 0.2 * player.playerStats.technique + 0.3 * player.playerStats.agility,
+                paramDef: 0.65 * player.playerStats.defense + 0.35 * player.playerStats.agility,
+            }))
+        })),
+
+        // 스쿼드2 데이터
+        ...userSquad2.map(squad => ({
+            squadId: squad.id,
+            players: squad.userteam.players.map(player => ({
+                playerId: player.id,
+                stamina: player.playerStats.stamina,
+                // 전처리 계산값 캐싱: 공격권 결정 변수, 공격 변수, 수비 변수
+                paramAtkPos: 0.65 * player.playerStats.pass + 0.35 * player.playerStats.pace,
+                paramAtk: 0.5 * player.playerStats.finishing + 0.2 * player.playerStats.technique + 0.3 * player.playerStats.agility,
+                paramDef: 0.65 * player.playerStats.defense + 0.35 * player.playerStats.agility,
+            }))
+        }))
+    ];
+
+}
 
 export default simulateMatch;
