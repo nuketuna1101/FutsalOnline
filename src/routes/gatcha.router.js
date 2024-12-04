@@ -10,11 +10,12 @@ const gatchaPay = 100;
 
 
 //가챠 뽑기 API
-router.post('/gatcha', async (req, res, next) => {
+router.post('/gatcha',userAuth, async (req, res, next) => {
     try {
         //const players = await prisma.users.findMany({});
-
-        //const userid = parseInt(req.userid, 10);
+        //유저 정보를 전부 받아온 다음
+        //user의 id를 parse하자.
+        const user = req.user;
         let [playerName, cash] = await prisma.$transaction(async (tx) => {
             let playerList = await tx.players.findMany({
 
@@ -32,7 +33,7 @@ router.post('/gatcha', async (req, res, next) => {
                     },
                     user : {
                         connect : {
-                            id : 3
+                            id : user.id
                         }
                     },
                 },
@@ -41,7 +42,7 @@ router.post('/gatcha', async (req, res, next) => {
 
             const updatedUser = await tx.userAccount.update({
                 where : {
-                    userId : 3
+                    userId : user.id
                 },
                 data: {
                     cash: {
@@ -55,9 +56,9 @@ router.post('/gatcha', async (req, res, next) => {
                 return res.status(404).json({ Message: ` No Money ` })
             }
 
-            return [playerList[random_count], 100]
+            return [playerList[random_count], updatedUser.cash]
         })
-        return res.status(200).json({ Message: ` ${playerName.playerName} 를 뽑았습니다. 잔액 ${cash} ` })
+        return res.status(200).json({ Message: ` ${playerName.playerName} 을(를) 뽑았습니다. 잔액 ${cash} ` })
     }
     catch (err) {
         next(err);
