@@ -131,39 +131,45 @@ router.post('/users/cash', authMiddleware, async (req, res, next) => {
                 cash: { increment: addCash }
             },
         });
-        return res.status(201).json({ Message: `${addCash}를 얻었습니다.` });
+        return res.status(201).json({ Message: `${addCash}캐시를 얻었습니다.` });
     } catch (err) {
         next(err);
     }
 });
 
 // 다른 유저의 스쿼드 조회
-router.get('/users/{userId}/squad', async (req, res, next) => {
+router.get('/users/squad', async (req, res, next) => {
     try {
-        const sqauds = await prisma.userTeams.findFirst({
+        const userId = Number(req.query.userId);
+        const sqauds = await prisma.userTeams.findMany({
+            where: {
+                userId: userId,
+                isSquad: true,
+            },
             include: {
-                userSquads: {
-                    select: {
-                        userTeamId: true,
-                    },
-                },
                 players: {
-                    select: {
-                        playerName: true,
-                    },
+                    include: {
+                        playerStats: {
+                            select: {
+                                technique: true,
+                                pass: true,
+                                agility: true,
+                                defense: true,
+                                finishing: true,
+                                stamina: true,
+                            },
+                        }
+                    }
                 },
             },
-            select: {
-                userId: true,
-                playerId: true,
-            }
-        })
+        });
         if(!sqauds){
-            return res.status(404).json({ message: '사용자의 스쿼드가 없습니다.' })
-        }
+            return res.status(404).json({ message: '사용자의 스쿼드가 없습니다.' });
+        };
+        return res.status(200).json({ data: sqauds });
     } catch (err) {
         next(err)
     }
-})
+});
 
 export default router;
