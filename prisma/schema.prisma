@@ -8,47 +8,52 @@ datasource db {
 }
 
 model Users {
-  id             Int          @id @default(autoincrement()) @map("id")
-  nickname       String       @unique @map("nickname")
-  password       String       @map("password")
-  userName       String       @map("userName")
-  matchesAsUser1 Matches[]    @relation("User1Matches")
-  matchesAsUser2 Matches[]    @relation("User2Matches")
-  UserAccount    UserAccount?
-  userTeams      UserTeams[]
+  id                Int        @id @default(autoincrement()) @map("id")
+  nickname          String     @unique @map("nickname")
+  password          String     @map("password")
+  userName          String     @map("userName")
+
+  UserAccount       UserAccount?
+  UserElo           UserElo?
+  userTeams         UserTeams[]
+  matchesAsUser1    Matches[]  @relation("User1Matches")
+  matchesAsUser2    Matches[]  @relation("User2Matches")  
 
   @@map("Users")
 }
 
+model UserElo {
+  id                Int      @id @default(autoincrement()) @map("id")
+  userId            Int      @unique       @map("userId")
+  userRating        Int      @map("userRating")
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  @@map("UserElo")
+}
+
 model UserAccount {
-  id     Int   @id @default(autoincrement()) @map("id")
-  userId Int   @unique @map("userId")
-  cash   Int   @default(0) @map("cash")
-  user   Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id      Int      @id @default(autoincrement())   @map("id")
+  userId  Int      @unique       @map("userId")
+  cash    Int      @default(0)  @map("cash")
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("UserAccount")
 }
 
 model UserTeams {
-  id         Int          @id @default(autoincrement()) @map("id")
-  userId     Int          @map("userId")
-  playerId   Int          @map("playerId")
-  userSquads UserSquads[]
-  players    Players      @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  user       Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())   @map("id")
+  userId         Int      @map("userId")
+  playerId       Int      @map("playerId")
+  playerUpgrade  Int      @default(1) @map("playerUpgrade")
+  isSquad        Boolean  @default(false) @map("isSquad")
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  players Players @relation(fields: [playerId],references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([playerId], map: "UserTeams_playerId_fkey")
   @@index([userId], map: "UserTeams_userId_fkey")
   @@map("UserTeams")
-}
-
-model UserSquads {
-  id         Int       @id @default(autoincrement()) @map("id")
-  userTeamId Int       @map("userTeamId")
-  userteam   UserTeams @relation(fields: [userTeamId], references: [id], onDelete: Cascade)
-
-  @@index([userTeamId], map: "UserSquads_userTeamId_fkey")
-  @@map("UserSquads")
 }
 
 model Players {
@@ -58,6 +63,16 @@ model Players {
   userTeams   UserTeams[]
 
   @@map("Players")
+}
+
+model TransferMarket {
+  id        Int      @id @default(autoincrement())   @map("id")
+  playerId  Int      @map("playerId")
+  userId    Int      @map("userId")
+  price     Int      @map("price")
+  createAt  DateTime @default(now()) @map("createdAt")
+
+  @@map("TransferMarket")
 }
 
 model Matches {
