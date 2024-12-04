@@ -16,7 +16,6 @@ import csvToJson from "../public/csvToJson";
 const router = express.Router();
 /* TO DO */
 
-// 같은 데이터 값이 들어가면 중복 처리 /
 //선수 데이터 csv to json
 router.post("/upload", async (req, res) => {
   try {
@@ -66,38 +65,35 @@ router.post("/upload", async (req, res) => {
   }
 });
 
-//선수 리스트에서 한명 검색
-router.get("/players/:playerId", async (req, res, next) => {
+// 유저가 가지고 있는 선수 조회
+router.get("/players/my", Authmiddleware, async (req, res, next) => {
   try {
-    const { playerId } = req.params;
+    console.log("Authenticated User Object:", req.user); 
 
-    //유니크 아이디 값으로 선수 아이디 검색
-    const player = await prisma.players.findUnique({
+    const userId = req.user.id; 
+    console.log("User ID:", userId); 
+
+    const teamPlayers = await prisma.userTeams.findMany({
       where: {
-        id: +playerId,
+        userId: +userId,
       },
-      select: {
-        playerName: true,
-        playerStats: {
+      include: {
+        players: {
           select: {
-            technique: true,
-            pass: true,
-            agility: true,
-            defense: true,
-            finishing: true,
-            stamina: true,
+            playerName: true,
           },
         },
       },
     });
 
-    if (!player) {
-      return res.status(404).json({ error: "선수가 존재하지 않습니다." });
+    if(teamPlayers.length === 0) {
+      return res.status(404).json({ error: "가지고 있는 선수가 존재하지 않습니다." });
     }
 
-    return res.status(200).json({ data: player });
+    return res.status(200).json({ data: teamPlayers });
   } catch (err) {
-    res.status(500).send("Error");
+    console.error("Error in /players/my:", err);
+    next(err);
   }
 });
 
@@ -130,29 +126,42 @@ router.get("/players", async (req, res, next) => {
   }
 });
 
-// 유저가 가지고 있는 선수 조회
-router.get("/players/my", Authmiddleware, async (req, res, next) => {
+//선수 리스트에서 한명 검색
+router.get("/players/:playerId", async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    console.log("Received playerId:", req.params.playerId);
 
-    const teamPlayers = await prisma.userTeams.findMany({
+    const { playerId } = req.params;
+
+    if (!playerId) {
+      return res.status(400).json({ error: "playerId가 제공되지 않았습니다." });
+    }
+
+    //유니크 아이디 값으로 선수 아이디 검색
+    const player = await prisma.players.findFirst({
       where: {
-        userId : +userId,
+        id : +playerId,
       },
-      include: {
-        players: {
+      select: {
+        playerName: true,
+        playerStats: {
           select: {
-            playerName: true,
+            technique: true,
+            pass: true,
+            agility: true,
+            defense: true,
+            finishing: true,
+            stamina: true,
           },
         },
       },
     });
 
-    if(teamPlayers.length === 0) {
-      return res.status(404).json({ error: "가지고 있는 선수가 존재하지 않습니다." });
+    if (!player) {
+      return res.status(404).json({ error: "선수가 존재하지 않습니다." });
     }
 
-    return res.status(200).json({ data: teamPlayers });
+    return res.status(200).json({ data: player });
   } catch (err) {
     next(err);
   }
