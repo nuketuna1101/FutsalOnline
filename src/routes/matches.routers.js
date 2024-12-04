@@ -56,8 +56,12 @@ async function legacyGetUserAndOppSquad() {
 //====================================================================================================================
 //====================================================================================================================
 router.post('/matches', authMiddleware, async (req, res, next) => {
-    // 1. auth로부터 user id가져오기
-    const { userId } = req.user;
+    // 1. auth로부터 user id가져오기 
+    const userId = req.user.id;
+    console.log("::   USERID : " + req.user);
+    console.log("::   USERID : " + userId);
+    if (!userId)
+        return res.status(400).json({ message: 'User ID is missing' });
     try {
         // 2. 랜덤 상대 userId 가져오기
         const randomOpponents = await prisma.users.findMany({
