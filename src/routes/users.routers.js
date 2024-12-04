@@ -70,7 +70,13 @@ router.post('/users/sign-up', async (req, res, next) => {
     }
 });
 
-// 로그인
+
+//====================================================================================================================
+//====================================================================================================================
+// src/routes/users.router.js
+// 로그인 api
+//====================================================================================================================
+//====================================================================================================================
 router.post('/users/sign-in', async (req, res, next) => {
     try {
         const { nickname, password } = req.body;
@@ -86,25 +92,23 @@ router.post('/users/sign-in', async (req, res, next) => {
             return res.status(401).json({ Message: '비밀번호가 일치하지 않습니다.' });
         }
 
-        req.session.nickname = user.nickname;
-        
-        const token = jwt.sign(
+        // req.session.userId = Number(user.id);
+
+        const accessToken = jwt.sign(
             {
-                id: user.id,
-                //nickname: user.nickname,
+                id: Number(user.id),
             },
             'custom-secret-key',
             {
                 expiresIn: '10m'
             }
         );
-        res.cookie('authMiddleware', `Bearer ${token}`);
+        console.log("check accessToken: " + (accessToken == null));
+        res.cookie('authorization', `Bearer ${accessToken}`);
         return res.status(200).json({ Message: `${nickname} 로그인 성공` });
     } catch (err) {
         next(err);
     }
-
-
 });
 
 // 캐시 지급

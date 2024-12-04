@@ -32,13 +32,20 @@ const simulateMatch = (squad1, squad2) => {
 
 
 // 각각의 모멘텀에서의 계산
-const getCachedStats = (squad) => squad.userteam.players.map(player => ({
-    stamina: player.playerStats.stamina,
+const getCachedStats = (squad) => {
+    if (!squad.userteam || !squad.userteam.players) {
+        throw new Error('[Error] Invalid squad structure');
+    }
     // 전처리 계산값 캐싱: 공격권 결정 변수, 공격 변수, 수비 변수
-    paramAtkPos: 0.65 * player.playerStats.pass + 0.35 * player.playerStats.pace,
-    paramAtk: 0.5 * player.playerStats.finishing + 0.2 * player.playerStats.technique + 0.3 * player.playerStats.agility,
-    paramDef: 0.65 * player.playerStats.defense + 0.35 * player.playerStats.agility,
-}));
+    return squad.userteam.players.map(player => ({
+        stamina: player.playerStats.stamina,
+        paramAtkPos: 0.65 * player.playerStats.pass + 0.35 * player.playerStats.pace,
+        paramAtk: 0.5 * player.playerStats.finishing + 0.2 * player.playerStats.technique + 0.3 * player.playerStats.agility,
+        paramDef: 0.65 * player.playerStats.defense + 0.35 * player.playerStats.agility,
+    }));
+};
+
+
 
 
 // x, y 인자를 받고 랜덤하게 확률 결과

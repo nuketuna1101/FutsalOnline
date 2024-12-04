@@ -39,7 +39,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
         // 랜덤하게 생성
         const randomIndex = crypto.randomInt(0, len);
         const randomOpponent = randomOpponents[randomIndex];
-
+        console.log(":: randomIndex " + randomIndex);
         // 2. userId로부터 team > squad 찾기
         // refactor: promise를 통한 병렬 처리 최적화
         const [userTeams, opponentTeams] = await Promise.all([
@@ -63,6 +63,17 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
                 include: { userteam: { include: { players: { include: { playerStats: true } } } } }
             })
         ]);
+
+
+        // squad: team 찾은 후 콘솔 로그
+        // console.log("userSquad:", JSON.stringify(userSquad, (key, value) => {
+        //     return typeof value === 'bigint' ? value.toString() : value;
+        // }, 2));
+        // console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => {
+        //     return typeof value === 'bigint' ? value.toString() : value;
+        // }, 2));
+
+
         // squad: team 잘 찾았는지
         if (userSquad.length === 0)
             return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
@@ -187,7 +198,12 @@ router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
 //====================================================================================================================
 router.get('/matches/latest', authMiddleware, async (req, res, next) => {
     // auth로부터 user id가져오기
-    const { userId } = req.user;
+    // const { userId } = req.user;
+    const userId = req.user.id;
+
+    console.log(":: req.user :: " + JSON.stringify(req.user, (key, value) => { return typeof value === 'bigint' ? value.toString() : value; }, 2));
+    console.log(":: userId " + userId);
+
     try {
         // 유저의 최근 10경기 매치 결과 가져오기
         const latestMatch = await prisma.matches.findFirst({
