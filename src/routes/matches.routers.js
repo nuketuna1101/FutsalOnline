@@ -46,42 +46,37 @@ async function legacyGetUserAndOppSquad() {
     return { userSquad, opponentSquad };
 }
 
-//====================================================================================================================
-//====================================================================================================================
-// 매치메이킹 API: 랜덤상대 매치메이킹
-// URL: /api/matches
-// method: POST
-// auth: 인증 필요
-// validation:
-//====================================================================================================================
-//====================================================================================================================
+
+
+
+/*
 router.post('/matches', authMiddleware, async (req, res, next) => {
-    // 1. auth로부터 user id가져오기 
     const userId = req.user.id;
-    console.log("::   USERID : " + req.user);
-    console.log("::   USERID : " + userId);
+    console.log(":: USER OBJECT : ", req.user);
+    console.log(":: USERID : ", userId);
+    
     if (!userId)
         return res.status(400).json({ message: 'User ID is missing' });
+
     try {
-        // 2. 랜덤 상대 userId 가져오기
         const randomOpponents = await prisma.users.findMany({
-            where: { id: { not: userId }, }
+            where: { id: { not: userId } },
         });
-        // validation: 랜덤매칭 후보군 없을시
+        
         const len = randomOpponents.length;
         if (len === 0)
             return res.status(404).json({ message: '[Not Found] 매칭상대 찾기 실패.' });
-        // 랜덤하게 생성
+
         const randomIndex = crypto.randomInt(0, len);
         const randomOpponent = randomOpponents[randomIndex];
-        // 2. userId와 randomOpponent.id 이용해서 스쿼드 넘겨주기.
+
         const [userSquad, opponentSquad] = await Promise.all([
             prisma.userTeams.findMany({
                 where: {
                     userId: userId,
                     isSquad: true
                 },
-                select: {
+                include: {
                     players: {
                         select: {
                             id: true,
@@ -96,7 +91,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
                     userId: randomOpponent.id,
                     isSquad: true
                 },
-                select: {
+                include: {
                     players: {
                         select: {
                             id: true,
@@ -107,11 +102,113 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
                 }
             })
         ]);
-        // squad: team 잘 찾았는지
+
         if (userSquad.length === 0)
             return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
         if (opponentSquad.length === 0)
             return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
+
+        console.log("userSquad:", JSON.stringify(userSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
+        console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
+
+        const { userSquadScore, opponentSquadScore } = simulateMatch(userSquad, opponentSquad);
+
+});
+*/
+
+
+//====================================================================================================================
+//====================================================================================================================
+// 매치메이킹 API: 랜덤상대 매치메이킹
+// URL: /api/matches
+// method: POST
+// auth: 인증 필요
+// validation:
+//====================================================================================================================
+//====================================================================================================================
+router.post('/matches', authMiddleware, async (req, res, next) => {
+    // 1. auth로부터 user id가져오기 
+    const userId = req.user.id;
+    if (!userId)
+        return res.status(400).json({ message: 'User ID is missing' });
+
+    try {
+        // 2. 랜덤 상대 userId 가져오기
+        const randomOpponents = await prisma.users.findMany({
+            where: { id: { not: userId }, }
+        });
+        // validation: 랜덤매칭 후보군 없을시
+        const len = randomOpponents.length;
+        if (len === 0)
+            return res.status(404).json({ message: '[Not Found] 매칭상대 찾기 실패.' });
+        // 랜덤하게 생성
+        const randomIndex = crypto.randomInt(0, len);
+        const randomOpponent = randomOpponents[randomIndex];
+        // 2. userId와 randomOpponent.id 이용해서 스쿼드 넘겨주기.
+        let [userSquad, opponentSquad] = await Promise.all([
+            prisma.userTeams.findMany({
+                where: {
+                    userId: userId,
+                    isSquad: true
+                },
+                include: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
+            }),
+            prisma.userTeams.findMany({
+                where: {
+                    userId: randomOpponent.id,
+                    isSquad: true
+                },
+                include: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
+            })
+        ]);
+        // 임시로그
+        console.log("userSquad:", JSON.stringify(userSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
+        console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
+        // squad: team 잘 찾았는지
+        if (userSquad.length === 0)
+            return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
+        // opponentSquad는 squad 설정안한 유저를 찾는 경우 flow 처리해야함
+        let trials = 10;
+        while (opponentSquad.length === 0) {
+            if (trials <= 0)
+                return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
+            trials--;
+
+            // 랜덤 상대 다시 뽑기
+            const randomIndex = crypto.randomInt(0, len);
+            const randomOpponent = randomOpponents[randomIndex];
+            opponentSquad = await prisma.userTeams.findMany({
+                where: {
+                    userId: randomOpponent.id,
+                    isSquad: true
+                },
+                include: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
+            });
+        }
 
 
         // utils에서 게임로직통해 매치에서의 양팀 스코어 생성
