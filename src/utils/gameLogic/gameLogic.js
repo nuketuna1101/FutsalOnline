@@ -5,6 +5,7 @@
 //====================================================================================================================
 //====================================================================================================================
 import crypto from 'crypto';
+import { GAME_LOGIC_WEIGHTS, STAMINA_DECAY_RATIO } from '../../config/gameLogic.config.js';
 
 // export 하려는 매치 시뮬레이션 로직
 const simulateMatch = (squad1, squad2) => {
@@ -39,9 +40,13 @@ const getCachedStats = (squad) => {
     // 전처리 계산값 캐싱: 공격권 결정 변수, 공격 변수, 수비 변수
     return squad.userteam.players.map(player => ({
         stamina: player.playerStats.stamina,
-        paramAtkPos: 0.65 * player.playerStats.pass + 0.35 * player.playerStats.pace,
-        paramAtk: 0.5 * player.playerStats.finishing + 0.2 * player.playerStats.technique + 0.3 * player.playerStats.agility,
-        paramDef: 0.65 * player.playerStats.defense + 0.35 * player.playerStats.agility,
+        paramAtkPos: GAME_LOGIC_WEIGHTS[WEIGHT_POS_PASS] * player.playerStats.pass
+            + GAME_LOGIC_WEIGHTS[WEIGHT_POS_PACE] * player.playerStats.pace,
+        paramAtk: GAME_LOGIC_WEIGHTS[WEIGHT_ATK_FINISHING] * player.playerStats.finishing
+            + GAME_LOGIC_WEIGHTS[WEIGHT_ATK_TECHNIQUE] * player.playerStats.technique
+            + GAME_LOGIC_WEIGHTS[WEIGHT_ATK_AGILITY] * player.playerStats.agility,
+        paramDef: GAME_LOGIC_WEIGHTS[WEIGHT_DEF_DEFENSE] * player.playerStats.defense
+            + GAME_LOGIC_WEIGHTS[WEIGHT_DEF_AGILITY] * player.playerStats.agility,
     }));
 };
 
@@ -66,10 +71,10 @@ const calculateTotalStats = (players) => {
         total.paramAtk += player.paramAtk * (player.stamina / 100);
         total.paramDef += player.paramDef * (player.stamina / 100);
         // 스테미너 10% 감소
-        player.stamina *= 0.9;
+        player.stamina *= STAMINA_DECAY_RATIO;
         return total;
-    }, 
-    { paramAtkPos: 0, paramAtk: 0, paramDef: 0 });
+    },
+        { paramAtkPos: 0, paramAtk: 0, paramDef: 0 });
 };
 
 export default simulateMatch;
