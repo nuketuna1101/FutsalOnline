@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export default async function (req, res, next) {
+
     /* TODO */
     try {
         const { authorization } = req.cookies;
@@ -26,7 +27,7 @@ export default async function (req, res, next) {
 
         console.log("Decoded Token:", decodedToken);
         console.log("Authenticated User:", req.user);
-        
+
         const user = await prisma.users.findFirst({
             where: { id: +id },
         });
