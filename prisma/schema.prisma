@@ -19,11 +19,21 @@ model Users {
   userName          String     @map("userName")
 
   UserAccount       UserAccount?
+  UserElo           UserElo?
   userTeams         UserTeams[]
   matchesAsUser1    Matches[]  @relation("User1Matches")
   matchesAsUser2    Matches[]  @relation("User2Matches")  
 
   @@map("Users")
+}
+
+model UserElo {
+  id                Int      @id @default(autoincrement()) @map("id")
+  userId            Int      @unique       @map("userId")
+  userRating        Int      @map("userRating")
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  @@map("UserElo")
 }
 
 model UserAccount {
@@ -37,23 +47,16 @@ model UserAccount {
 }
 
 model UserTeams {
-  id        Int      @id @default(autoincrement())   @map("id")
-  userId    Int      @map("userId")
-  playerId  Int      @map("playerId")
+  id             Int      @id @default(autoincrement())   @map("id")
+  userId         Int      @map("userId")
+  playerId       Int      @map("playerId")
+  playerUpgrade  Int      @default(1) @map("playerUpgrade")
+  isSquad        Boolean  @default(false) @map("isSquad")
 
-  userSquads UserSquads[]
   user Users @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   players Players @relation(fields: [playerId],references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("UserTeams")
-}
-
-model UserSquads {
-  id          Int      @id @default(autoincrement())   @map("id")
-  userTeamId  Int      @map("userTeamId")
-  
-  userteam UserTeams @relation(fields: [userTeamId],references: [id], onDelete: Cascade, onUpdate: Cascade)
-  @@map("UserSquads")
 }
 
 model Players { 
@@ -64,6 +67,16 @@ model Players {
   playerStats       PlayerStats?       
 
   @@map("Players")
+}
+
+model TransferMarket {
+  id        Int      @id @default(autoincrement())   @map("id")
+  playerId  Int      @map("playerId")
+  userId    Int      @map("userId")
+  price     Int      @map("price")
+  createAt  DateTime @default(now()) @map("createdAt")
+
+  @@map("TransferMarket")
 }
 
 model Matches { 
