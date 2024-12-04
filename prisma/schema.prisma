@@ -98,6 +98,7 @@ model PlayerStats {
   playerId    Int      @unique @map("playerId")
   technique   Int      @default(0)   @map("technique")
   pass        Int      @default(0)   @map("pass")
+  pace        Int      @default(0)   @map("pace")
   agility     Int      @default(0)   @map("agility")
   defense     Int      @default(0)   @map("defense")
   finishing   Int      @default(0)   @map("finishing")
