@@ -33,7 +33,7 @@ router.post('/squads', userAuth, async (req,res,next)=>{
         //const userid = req.userid;
         const testsquard = req.body;
         const user = req.user;
-        console.log(user);
+        //console.log(user);
         
 
         //squad에서 값을 다 가져오자.
@@ -57,7 +57,7 @@ router.post('/squads', userAuth, async (req,res,next)=>{
             {
                 const squadedCharacter = await tx.userTeams.findFirst({
                     where : {
-                        userId : user.id,
+                        userId : +user.id,
                         id : squad_list[i]
                     }
                 })
@@ -111,7 +111,7 @@ router.post('/squads', userAuth, async (req,res,next)=>{
         // }
 
         
-        return res.status(200).json({message : squadTransaction})
+        return res.status(200).json({message : "스쿼드 편성 완료!"})
         
     }
     catch(err){
@@ -120,9 +120,9 @@ router.post('/squads', userAuth, async (req,res,next)=>{
 })
 
 //squad 출력
-router.get('/squads', async (req,res,next)=>{
+router.get('/squads',userAuth, async (req,res,next)=>{
     try{
-        //const user = req.user;
+        const user = req.user;
         const squadTransaction = await prisma.$transaction(async (tx)=>{
             const allSquard = await tx.userSquads.findMany({});
             let squad_list = [];
@@ -137,7 +137,7 @@ router.get('/squads', async (req,res,next)=>{
             {
                 const squadedCharacter = await tx.userTeams.findFirst({
                     where : {
-                        userId : 3,
+                        userId : +user.id,
                         id : squad_list[i]
                     }
                 })
