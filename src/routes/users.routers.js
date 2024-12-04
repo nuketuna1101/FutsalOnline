@@ -98,7 +98,7 @@ router.post('/users/sign-in', async (req, res, next) => {
             }
         );
 
-        res.cookie('authMiddleware', `Bearer ${token}`);
+        res.cookie('authorization', `Bearer ${token}`);
         return res.status(200).json({ Message: `${nickname} 로그인 성공` });
     } catch (err) {
         next(err);

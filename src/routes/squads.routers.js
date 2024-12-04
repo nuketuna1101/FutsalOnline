@@ -33,6 +33,7 @@ router.post('/squads', userAuth, async (req,res,next)=>{
         //const userid = req.userid;
         const testsquard = req.body;
         const user = req.user;
+        console.log(user);
         
 
         //squad에서 값을 다 가져오자.

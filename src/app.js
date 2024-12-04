@@ -18,7 +18,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.DATABASE_PORT;
+const PORT = process.env.CURRENT_PORT;
 
 const MySQLStore = expressMySQLSession(expressSession);
 const sessionStore = new MySQLStore({

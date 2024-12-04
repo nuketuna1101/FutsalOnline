@@ -16,6 +16,7 @@ export default async function (req, res, next) {
   /* TODO */
   try {
     const { authorization } = req.cookies;
+    console.log(req.cookies);
     if (!authorization) throw new Error("토큰이 존재하지 않습니다.");
 
     const [tokenType, token] = authorization.split(" ");
