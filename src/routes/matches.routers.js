@@ -14,6 +14,37 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
+async function legacyGetUserAndOppSquad() {
+    // 2. userId로부터 team > squad 찾기
+    // refactor: promise를 통한 병렬 처리 최적화
+    const [userTeams, opponentTeams] = await Promise.all([
+        prisma.userTeams.findMany({ where: { userId } }),
+        prisma.userTeams.findMany({ where: { userId: randomOpponent.id } })
+    ]);
+    // validation: team 잘 찾았는지
+    if (userTeams.length === 0)
+        return res.status(404).json({ message: '[Not Found] 유저 팀 찾지못함' });
+    if (opponentTeams.length === 0)
+        return res.status(404).json({ message: '[Not Found] 상대 팀 찾지못함' });
+    // sqaud 찾기
+    const [userSquad, opponentSquad] = await Promise.all([
+        prisma.userSquads.findMany({
+            where: { userTeamId: { in: userTeams.map(team => team.id) } },
+            include: { userteam: { include: { players: { include: { playerStats: true } } } } }
+        }),
+        prisma.userSquads.findMany({
+            where: { userTeamId: { in: opponentTeams.map(team => team.id) } },
+            include: { userteam: { include: { players: { include: { playerStats: true } } } } }
+        })
+    ]);
+    // squad: team 잘 찾았는지
+    if (userSquad.length === 0)
+        return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
+    if (opponentSquad.length === 0)
+        return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
+
+    return { userSquad, opponentSquad };
+}
 
 //====================================================================================================================
 //====================================================================================================================
@@ -39,46 +70,45 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
         // 랜덤하게 생성
         const randomIndex = crypto.randomInt(0, len);
         const randomOpponent = randomOpponents[randomIndex];
-        console.log(":: randomIndex " + randomIndex);
-        // 2. userId로부터 team > squad 찾기
-        // refactor: promise를 통한 병렬 처리 최적화
-        const [userTeams, opponentTeams] = await Promise.all([
-            prisma.userTeams.findMany({ where: { userId } }),
-            prisma.userTeams.findMany({ where: { userId: randomOpponent.id } })
-        ]);
-        // validation: team 잘 찾았는지
-        if (userTeams.length === 0)
-            return res.status(404).json({ message: '[Not Found] 유저 팀 찾지못함' });
-        if (opponentTeams.length === 0)
-            return res.status(404).json({ message: '[Not Found] 상대 팀 찾지못함' });
-
-        // sqaud 찾기
+        // 2. userId와 randomOpponent.id 이용해서 스쿼드 넘겨주기.
         const [userSquad, opponentSquad] = await Promise.all([
-            prisma.userSquads.findMany({
-                where: { userTeamId: { in: userTeams.map(team => team.id) } },
-                include: { userteam: { include: { players: { include: { playerStats: true } } } } }
+            prisma.userTeams.findMany({
+                where: {
+                    userId: userId,
+                    isSquad: true
+                },
+                select: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
             }),
-            prisma.userSquads.findMany({
-                where: { userTeamId: { in: opponentTeams.map(team => team.id) } },
-                include: { userteam: { include: { players: { include: { playerStats: true } } } } }
+            prisma.userTeams.findMany({
+                where: {
+                    userId: randomOpponent.id,
+                    isSquad: true
+                },
+                select: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
             })
         ]);
-
-
-        // squad: team 찾은 후 콘솔 로그
-        // console.log("userSquad:", JSON.stringify(userSquad, (key, value) => {
-        //     return typeof value === 'bigint' ? value.toString() : value;
-        // }, 2));
-        // console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => {
-        //     return typeof value === 'bigint' ? value.toString() : value;
-        // }, 2));
-
-
         // squad: team 잘 찾았는지
         if (userSquad.length === 0)
             return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
         if (opponentSquad.length === 0)
             return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
+
 
         // utils에서 게임로직통해 매치에서의 양팀 스코어 생성
         const { userSquadScore, opponentSquadScore } = simulateMatch(userSquad, opponentSquad);
@@ -216,7 +246,7 @@ router.get('/matches/latest', authMiddleware, async (req, res, next) => {
             orderBy: { matchDate: 'desc' },
             include: {
                 user1: { select: { nickname: true } },
-                user2: { select: { nickname: true } }, 
+                user2: { select: { nickname: true } },
             },
         });
 
@@ -256,7 +286,7 @@ router.get('/matches/recent', authMiddleware, async (req, res, next) => {
             orderBy: { matchDate: 'desc' },
             take: count,
             include: {
-                user1: { select: { nickname: true } }, 
+                user1: { select: { nickname: true } },
                 user2: { select: { nickname: true } },
             },
         });
