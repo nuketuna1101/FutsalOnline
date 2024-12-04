@@ -109,10 +109,10 @@ router.post('/users/cash', authMiddleware, async (req, res, next) => {
     try {
         const user = req.user;
 
-        if(!user || !user.id) {
-            return res.status(401).json({ message: "인증되지 않은 사용자 입니다."})
+        if (!user || !user.id) {
+            return res.status(401).json({ message: "인증되지 않은 사용자 입니다." })
         }
-        
+
         const addCash = 5000;
 
         const userAccount = await prisma.userAccount.findUnique({
@@ -121,14 +121,14 @@ router.post('/users/cash', authMiddleware, async (req, res, next) => {
             },
         });
 
-        if(!userAccount){
-            return res.status(404).json({ message: "사용자 계정을 찾을 수 없습니다."});
+        if (!userAccount) {
+            return res.status(404).json({ message: "사용자 계정을 찾을 수 없습니다." });
         }
 
         const afterCash = await prisma.userAccount.update({
-            where: { userId : user.id },
+            where: { userId: user.id },
             data: {
-                cash: { increment: addCash}
+                cash: { increment: addCash }
             },
         });
         return res.status(201).json({ Message: `${addCash}를 얻었습니다.` });
@@ -136,5 +136,34 @@ router.post('/users/cash', authMiddleware, async (req, res, next) => {
         next(err);
     }
 });
+
+// 다른 유저의 스쿼드 조회
+router.get('/users/{userId}/squad', async (req, res, next) => {
+    try {
+        const sqauds = await prisma.userTeams.findFirst({
+            include: {
+                userSquads: {
+                    select: {
+                        userTeamId: true,
+                    },
+                },
+                players: {
+                    select: {
+                        playerName: true,
+                    },
+                },
+            },
+            select: {
+                userId: true,
+                playerId: true,
+            }
+        })
+        if(!sqauds){
+            return res.status(404).json({ message: '사용자의 스쿼드가 없습니다.' })
+        }
+    } catch (err) {
+        next(err)
+    }
+})
 
 export default router;
