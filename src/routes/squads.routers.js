@@ -7,7 +7,7 @@
 
 import express from 'express';
 import { prisma } from '../utils/prisma/index.js';
-import userAuth from '../middlewares/auth.middleware.js'
+import authMiddleware from '../middlewares/auth.middleware.js'
 
 
 const router = express.Router();
@@ -28,7 +28,7 @@ const router = express.Router();
 //userteams는 여러 개를 추가할 수 있겠다.
 //userSquad에는 각 유저 당 3개만 들어갈 수 있도록 한다.
 //이미 스쿼드가 등록된 경우에는 마지막 Squad를 수정하도록 한다.
-router.post('/squads', userAuth, async (req,res,next)=>{
+router.post('/squads', authMiddleware, async (req,res,next)=>{
     try{
         const testsquard = req.body;
         const user = req.user;
@@ -147,7 +147,7 @@ router.post('/squads', userAuth, async (req,res,next)=>{
 })
 
 //squad 출력
-router.get('/squads',userAuth, async (req,res,next)=>{
+router.get('/squads',authMiddleware, async (req,res,next)=>{
     try{
         const user = req.user;
         const squadTransaction = await prisma.$transaction(async (tx)=>{
