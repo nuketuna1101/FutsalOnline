@@ -85,19 +85,19 @@ router.post('/users/sign-in', async (req, res, next) => {
         if (!(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ Message: '비밀번호가 일치하지 않습니다.' });
         }
-        // req.session.nickname = user.nickname;
-        
-        const token = jwt.sign(
+        // req.session.userId = Number(user.id);
+
+        const accessToken = jwt.sign(
             {
-                id: user.id,
+                id: Number(user.id),
             },
             'custom-secret-key',
             {
                 expiresIn: '10m'
             }
         );
-
-        res.cookie('authMiddleware', `Bearer ${token}`);
+        console.log("check accessToken: " + (accessToken == null));
+        res.cookie('authorization', `Bearer ${accessToken}`);
         return res.status(200).json({ Message: `${nickname} 로그인 성공` });
     } catch (err) {
         next(err);
@@ -105,17 +105,30 @@ router.post('/users/sign-in', async (req, res, next) => {
 });
 
 // 캐시 지급
-router.post('/users/cash/:id', authMiddleware, async (req, res, next) => {
+router.post('/users/cash', authMiddleware, async (req, res, next) => {
     try {
-        const { cash } = req.body;
+        const user = req.user;
 
-        const addCash = await prisma.users.update({
-            where: { id },
+        if(!user || !user.id) {
+            return res.status(401).json({ message: "인증되지 않은 사용자 입니다."})
+        }
+        
+        const addCash = 5000;
+
+        const userAccount = await prisma.userAccount.findUnique({
+            where: {
+                userId: user.id,
+            },
+        });
+
+        if(!userAccount){
+            return res.status(404).json({ message: "사용자 계정을 찾을 수 없습니다."});
+        }
+
+        const afterCash = await prisma.userAccount.update({
+            where: { userId : user.id },
             data: {
-                cash: {
-                    // 캐시얻는 양을 부여할 값
-                    increment: cash.increment,
-                },
+                cash: { increment: addCash}
             },
         });
         return res.status(201).json({ Message: `${addCash}를 얻었습니다.` });
