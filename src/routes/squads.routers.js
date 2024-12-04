@@ -30,10 +30,8 @@ const router = express.Router();
 //이미 스쿼드가 등록된 경우에는 마지막 Squad를 수정하도록 한다.
 router.post('/squads', userAuth, async (req,res,next)=>{
     try{
-        //const userid = req.userid;
         const testsquard = req.body;
         const user = req.user;
-        //console.log(user);
         
 
         //squad에서 값을 다 가져오자.
@@ -50,7 +48,7 @@ router.post('/squads', userAuth, async (req,res,next)=>{
                 squad_list.push(allSquard[i].userTeamId);
             }
 
-            console.log(squad_list);
+            //console.log(squad_list);
             let re_list = [];
 
             for(let i = 0;i<squad_list.length;i++)
@@ -61,38 +59,59 @@ router.post('/squads', userAuth, async (req,res,next)=>{
                         id : squad_list[i]
                     }
                 })
-                re_list.push(squadedCharacter);
+                if(!squadedCharacter)
+                {
+                    console.log("비었음")
+                }
+                else
+                {
+                    re_list.push(squadedCharacter.id);
+                }
+                
             }
-
-            console.log(re_list);
 
             const deletedSquad = await tx.userSquads.deleteMany({
                 where : {
                     userTeamId : {
-                        in : squad_list
+                        in : re_list
                     }
                 }
             })
 
             const currentTeamSqard = await tx.userTeams.findMany({
                 where : {
-                    userId : user.id //나중에 userid를 받아서 그걸로 바꾸도록 하자.
+                    userId : user.id
                 }
             });
-            for(let i of Object.values(testsquard))
+
+            const teamId = [];
+
+            for(let i = 0;i<currentTeamSqard.length;i++)
             {
-                await tx.userSquads.create({
-                    data : {
-                        userteam : {
-                            connect : {
-                                id : i
-                            }
-                        }
-                    }
-                })
+                teamId.push(currentTeamSqard[i].id);
             }
 
-            
+            for(let i of Object.values(testsquard))
+            {
+                if(teamId.includes(i))
+                {
+                    await tx.userSquads.create({
+                        data : {
+                            userteam : {
+                                connect : {
+                                    id : i
+                                }
+                            }
+                        }
+                    })
+                }
+                else
+                {
+                    throw new Error("invaildIndex");
+                }
+            }
+
+           
 
             
 
@@ -115,7 +134,15 @@ router.post('/squads', userAuth, async (req,res,next)=>{
         
     }
     catch(err){
-        next(err);
+        if(err === "invaildIndex")
+        {
+            res.status(404).json({message : "확실치 않은 인덱스!"})
+        }
+        else
+        {
+            next(err);
+        }
+        
     }
 })
 
@@ -141,7 +168,15 @@ router.get('/squads',userAuth, async (req,res,next)=>{
                         id : squad_list[i]
                     }
                 })
-                re_list.push(squadedCharacter);
+                if(!squadedCharacter)
+                {
+                    console.log("비었음")
+                }
+                else
+                {
+                    re_list.push(squadedCharacter);
+                }
+                
             }
 
             
@@ -161,41 +196,52 @@ router.get('/squads',userAuth, async (req,res,next)=>{
     }
 })
 
-router.get('/test', (req,res)=>{
-    try
-    {
-        return res.status(200).json({data : 10})
+router.get('/squadsAll', async (req,res,next)=>{
+    try{
+        const squadTransaction = await prisma.$transaction(async (tx)=>{
+            const allSquard = await tx.userSquads.findMany({});
+            let squad_list = [];
+            for(let i = 0;i<allSquard.length;i++)
+            {
+                squad_list.push(allSquard[i].userTeamId);
+            }
+
+            let re_list = [];
+
+            for(let i = 0;i<squad_list.length;i++)
+            {
+                const squadedCharacter = await tx.userTeams.findFirst({
+                    where : {
+                        userId : +user.id,
+                        id : squad_list[i]
+                    }
+                })
+                if(!squadedCharacter)
+                {
+                    console.log("비었음")
+                }
+                else
+                {
+                    re_list.push(squadedCharacter);
+                }
+                
+            }
+
+            
+
+            
+
+            return re_list;
+        })
+
+        return res.status(201).json({data : squadTransaction})
+
+
     }
-    catch
+    catch(err)
     {
-        return res.status(400).json({data : 1})
+        next(err);
     }
 })
-
-router.get('/token', (req,res)=>{
-    try
-    {
-        // const token = jwt.sign(
-        //     {
-        //         nickname: "helloworld",
-        //     },
-        //     'custom-secret-key',
-        //     {
-        //         expiresIn: '10m'
-        //     }
-        // );
-    
-        // res.cookie('authMiddleware', `Bearer ${token}`);
-    
-        return res.status(202).json({data : "토큰이 발급되었습니다."} )
-    }
-    catch
-    {
-        return res.status(404).json({data : "토큰이 발급 안되었습니다."} )
-    }
-    
-})
-
-/* TO DO */
 
 export default router;
