@@ -18,8 +18,8 @@ router.post('/transfermarket', authMiddleware, async (req, res, next) => {
                 where: {
                     id: userTeamId,
                     AND: [
-                       { userId: user.id},
-                        {isSquad: false}
+                        { userId: user.id },
+                        { isSquad: false }
                     ]
                 }
             });
@@ -91,9 +91,6 @@ router.post('/transfermarket/:marketId', authMiddleware, async (req, res, next) 
                 }
             })
 
-            console.log("구매 전 확인")
-            console.log(user.id);
-
             //구매한 사람의 돈은 줄어들고
             await tx.userAccount.update({
                 where: {
@@ -105,9 +102,6 @@ router.post('/transfermarket/:marketId', authMiddleware, async (req, res, next) 
                     }
                 }
             })
-
-
-            console.log("구매 돈 주는 건 확인")
 
             //판매한 사람이 아직 존재하는지 확인하고
             const soldedUser = await tx.users.findUnique({
@@ -211,8 +205,6 @@ router.delete('/transfermarket', authMiddleware, async (req, res, next) => {
             if (!cancelMarket) {
                 throw new Error("잘못된 접근입니다.");
             }
-
-            //throw new Error("체크용");
 
             //삭제된 걸 확인했다면 그 삭제된 데이터 가운데 하나를 테이블에 집어 넣도록 하자.
 
