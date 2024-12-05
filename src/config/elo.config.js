@@ -11,4 +11,9 @@ const INITIAL_ELO = 1000;
 // 점수대에 매칭 상대 탐색 범위
 const MATCHING_RANGE = 50;
 
-export { INITIAL_ELO, MATCHING_RANGE };
+// 승패 시 증감하는 elo 레이팅 점수량
+const ELO_WINNER_INCREMENT = 10;
+const ELO_LOSER_DECREMENT = -10;
+
+
+export { INITIAL_ELO, MATCHING_RANGE, ELO_WINNER_INCREMENT, ELO_LOSER_DECREMENT };
