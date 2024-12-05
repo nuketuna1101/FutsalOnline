@@ -199,16 +199,19 @@ router.get('/users/ranks', authMiddleware, async (req, res, next) => {
 
         // 유저의 rating 점수
         const userRating = userElo.userRating;
-        // 2. 요청 유저의 랭킹 계산
+
+        // 1. 유저의 랭킹 계산
         const userRank = await prisma.userElo.count({
             where: { userRating: { gt: userRating } },
         }) + 1;
 
-        // 3. 인접한 5명 정보 조회
-        const neighbors = await prisma.userElo.findMany({
-            orderBy: [{ userRating: 'desc' },{ userId: 'asc' },],
-            skip: Math.max(userRank - 3, 0),
-            take: 5,
+        // 3. 동일 점수대 유저들
+        const usersWithSameRating = await prisma.userElo.findMany({
+            where: {
+                userRating,
+                userId: { not: userId },
+            },
+            orderBy: [{ userRating: 'desc' }, { userId: 'asc' }],
             select: {
                 userId: true,
                 userRating: true,
@@ -216,61 +219,14 @@ router.get('/users/ranks', authMiddleware, async (req, res, next) => {
             },
         });
 
-        // 4. 결과 반환
-        return res.status(200).json({
-            message: '[Success] 랭킹 조회 성공',
-            userRank,
-            userRating,
-            neighborUsers: neighbors.map((user, index) => ({
-                rank: userRank - 2 + index,
-                userId: user.userId,
-                nickname: user.user.nickname,
-                userName: user.user.userName,
-                userRating: user.userRating,
-            })),
-        });
-
-
-    } catch (error) {
-        next(error);
-    }
-});
-
-//====================================================================================================================
-//====================================================================================================================
-// 미인증 상태로, 지정한 유저의 userRating 기반한 랭킹 조회
-// response: 유저의 userRating 수치, 실제 몇번째 랭킹인지, user를 포함해서 userRating 수치가 인접한 5명 목록 조회 
-// (유저가 1등이라면 1,2,3,4,5등, 유저가 9등이라면, 7,8,9,10,11 등)
-//====================================================================================================================
-//====================================================================================================================
-router.get('/users/ranks/:userId', async (req, res, next) => {
-    // auth로부터 user id가져오기
-    const userId = parseInt(req.params.userId, 10);
-    // validation: userId 검증
-    if (isNaN(userId)) 
-        return res.status(400).json({ message: '[Bad Request] 유효하지 않은 userId' });
-    
-    try {
-        const userElo = await prisma.userElo.findUnique({
-            where: { userId },
-            select: { userRating: true },
-        });
-        // validation: 유저 elo 찾았는지
-        if (!userElo)
-            return res.status(404).json({ message: '[Not Found] 유저의 랭킹 정보 찾을 수 없음.' });
-
-        // 유저의 rating 점수
-        const userRating = userElo.userRating;
-        // 2. 요청 유저의 랭킹 계산
-        const userRank = await prisma.userElo.count({
-            where: { userRating: { gt: userRating } },
-        }) + 1;
-
-        // 3. 인접한 5명 정보 조회
-        const neighbors = await prisma.userElo.findMany({
-            orderBy: { userRating: 'desc' },
-            skip: Math.max(userRank - 3, 0),
-            take: 5,
+        // 3. 인접 점수 상위 유저 1명
+        const upperNeighbors = await prisma.userElo.findMany({
+            where: {
+                userRating: { gt: userRating },
+                userId: { not: userId },
+            },
+            orderBy: [{ userRating: 'desc' }, { userId: 'asc' }],
+            take: 1,
             select: {
                 userId: true,
                 userRating: true,
@@ -278,20 +234,50 @@ router.get('/users/ranks/:userId', async (req, res, next) => {
             },
         });
 
-        // 4. 결과 반환
+        // 4. 인접 점수 하위 유저 1명
+        const lowerNeighbors = await prisma.userElo.findMany({
+            where: {
+                userRating: { lt: userRating },
+                userId: { not: userId },
+            },
+            orderBy: [{ userRating: 'desc' }, { userId: 'asc' }],
+            take: 1,
+            select: {
+                userId: true,
+                userRating: true,
+                user: { select: { userName: true, nickname: true } },
+            },
+        });
+
+        // 5. 결과 반환
         return res.status(200).json({
             message: '[Success] 랭킹 조회 성공',
             userRank,
             userRating,
-            neighborUsers: neighbors.map((user, index) => ({
-                rank: userRank - 2 + index,
-                userId: user.userId,
-                nickname: user.user.nickname,
-                userName: user.user.userName,
-                userRating: user.userRating,
-            })),
+            neighborUsers: [
+                // 인접 상위 유저
+                ...upperNeighbors.map((user, index) => ({
+                    userId: user.userId,
+                    nickname: user.user.nickname,
+                    userName: user.user.userName,
+                    userRating: user.userRating,
+                })),
+                // 동일한 랭크인 유저들을 같이 출력
+                ...usersWithSameRating.map((user, index) => ({
+                    userId: user.userId,
+                    nickname: user.user.nickname,
+                    userName: user.user.userName,
+                    userRating: user.userRating,
+                })),
+                // 인접 하위 유저
+                ...lowerNeighbors.map((user, index) => ({
+                    userId: user.userId,
+                    nickname: user.user.nickname,
+                    userName: user.user.userName,
+                    userRating: user.userRating,
+                }))
+            ],
         });
-
 
     } catch (error) {
         next(error);
@@ -336,6 +322,53 @@ router.get('/users/ranks/top', async (req, res, next) => {
             message: '[Success] Top Rankers below.',
             topRankers: response,
         });
+    } catch (error) {
+        next(error);
+    }
+});
+
+//====================================================================================================================
+//====================================================================================================================
+// 미인증 상태로, 지정한 유저의 userRating 기반한 랭킹 조회
+// response: 유저의 userRating 수치, 실제 몇번째 랭킹인지, user를 포함해서 userRating 수치가 인접한 5명 목록 조회 
+// (유저가 1등이라면 1,2,3,4,5등, 유저가 9등이라면, 7,8,9,10,11 등)
+//====================================================================================================================
+//====================================================================================================================
+router.get('/users/ranks/:userId', async (req, res, next) => {
+    // auth로부터 user id가져오기
+    const userId = parseInt(req.params.userId, 10);
+    // validation: userId 검증
+    if (isNaN(userId))
+        return res.status(400).json({ message: '[Bad Request] 유효하지 않은 userId' });
+
+    try {
+        const userElo = await prisma.userElo.findUnique({
+            where: { userId },
+            select: {
+                userRating: true,
+                user: { select: { nickname: true } },
+            },
+        });
+        // validation: 유저 elo 찾았는지
+        if (!userElo)
+            return res.status(404).json({ message: '[Not Found] 유저의 랭킹 정보 찾을 수 없음.' });
+
+        // 유저의 rating 점수
+        const { userRating, user: { nickname } } = userElo;
+        // 2. 요청 유저의 랭킹 계산
+        const userRank = await prisma.userElo.count({
+            where: { userRating: { gt: userRating } },
+        }) + 1;
+
+        // 5. 결과 반환
+        return res.status(200).json({
+            message: '[Success] 랭킹 조회 성공',
+            userRank,
+            nickname,
+            userRating,
+        });
+
+
     } catch (error) {
         next(error);
     }
