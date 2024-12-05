@@ -157,6 +157,7 @@ router.get('/users/squad', async (req, res, next) => {
                                 defense: true,
                                 finishing: true,
                                 stamina: true,
+                                pace: true,
                             },
                         }
                     }

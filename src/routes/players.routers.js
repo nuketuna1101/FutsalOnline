@@ -112,6 +112,7 @@ router.get("/players", async (req, res, next) => {
             defense: true,
             finishing: true,
             stamina: true,
+            pace: true,
           },
         },
       },
@@ -153,13 +154,14 @@ router.get("/players/:playerId", async (req, res, next) => {
             defense: true,
             finishing: true,
             stamina: true,
+            pace: true,
           },
         },
       },
     });
 
-    if (!player) {
-      return res.status(404).json({ error: "선수가 존재하지 않습니다." });
+    if (!player || !player.playerStats) {
+      return res.status(404).json({ error: "선수가 존재하지 않거나 스탯 정보가 없습니다." });
     }
 
     return res.status(200).json({ data: player });
