@@ -6,6 +6,9 @@
 //====================================================================================================================
 
 // 초기 ELO 점수
-const INITIAL_ELO = 2000;
+const INITIAL_ELO = 1000;
 
-export { INITIAL_ELO };
+// 점수대에 매칭 상대 탐색 범위
+const MATCHING_RANGE = 50;
+
+export { INITIAL_ELO, MATCHING_RANGE };
