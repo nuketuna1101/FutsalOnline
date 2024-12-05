@@ -145,8 +145,15 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
         return res.status(200).json({
             message: '[Success] Match created successfully.',
             match,
-            user: { userId, userSquadScore },
-            opponent: { userId: randomOpponent.id, opponentSquadScore },
+            user: {
+                userId,
+                userNewRating: userElo.userRating
+            },
+            opponent: {
+                userId: randomOpponent.id,
+                opponentNewRating: opponentElo.userRating
+            },
+            matchResult: { message: `[Match Result] : [${userSquadScore} : ${opponentSquadScore}] >> ${matchResult}` },
         });
 
     } catch (error) {
@@ -236,9 +243,19 @@ router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
             }
         });
 
+        // 성공적으로 완료된 경우
         return res.status(200).json({
-            message: '[Success] match created.',
+            message: '[Success] Match created successfully.',
             match,
+            user: {
+                userId,
+                userNewRating: userElo.userRating
+            },
+            opponent: {
+                userId: randomOpponent.id,
+                opponentNewRating: opponentElo.userRating
+            },
+            matchResult: { message: `[Match Result] : [${userSquadScore} : ${opponentSquadScore}] >> ${matchResult}` },
         });
 
     } catch (error) {
