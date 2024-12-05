@@ -4,11 +4,11 @@
 // 유저 api 라우터
 //====================================================================================================================
 //====================================================================================================================
-
 import express from 'express';
 import { prisma } from '../utils/prisma/index.js';
 import authMiddleware from '../middlewares/auth.middleware.js';
 import simulateMatch from '../utils/gameLogic/gameLogic.js';
+import { MATCHMAKING_TRIALS_CONSTRAINTS } from "../config/gameLogic.config.js";
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -80,7 +80,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
         if (userSquad.length === 0)
             return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
         // opponentSquad는 squad 설정안한 유저를 찾는 경우 flow 처리해야함
-        let trials = 10;
+        let trials = MATCHMAKING_TRIALS_CONSTRAINTS;
         while (opponentSquad.length === 0) {
             if (trials <= 0)
                 return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
@@ -145,9 +145,12 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
 //====================================================================================================================
 router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
     // auth로부터 user id가져오기
-    const { userId } = req.user;
+    const userId = req.user.id;
     // param으로부터 상대 id
     const opponentUserId = parseInt(req.params.userId, 10);
+    // validation: 자기 자신에게 걸 순 없음.
+    if (userId === opponentUserId)
+        return res.status(400).json({ message: '[Bad Request] 자기 자신의 아이디 입력함.' });
 
     try {
         // validation: 지정 상대 존재하는지 체크
@@ -157,28 +160,37 @@ router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
         if (!opponent)
             return res.status(404).json({ message: '[Not Found] 지목한 매칭상대를 찾지 못함.' });
 
-        // 2. userId로부터 team > squad 찾기
-        // refactor: promise를 통한 병렬 처리 최적화
-        const [userTeams, opponentTeams] = await Promise.all([
-            prisma.userTeams.findMany({ where: { userId } }),
-            prisma.userTeams.findMany({ where: { userId: opponentUserId } })
-        ]);
-        // validation: team 잘 찾았는지
-        if (userTeams.length === 0)
-            return res.status(404).json({ message: '[Not Found] 유저 팀 찾지못함' });
-        if (opponentTeams.length === 0)
-            return res.status(404).json({ message: '[Not Found] 상대 팀 찾지못함' });
-
-
-        // sqaud 찾기
-        const [userSquad, opponentSquad] = await Promise.all([
-            prisma.userSquads.findMany({
-                where: { userTeamId: { in: userTeams.map(team => team.id) } },
-                include: { userteam: { include: { players: { include: { playerStats: true } } } } }
+        // 2. userId와 randomOpponent.id 이용해서 스쿼드 넘겨주기.
+        let [userSquad, opponentSquad] = await Promise.all([
+            prisma.userTeams.findMany({
+                where: {
+                    userId: userId,
+                    isSquad: true
+                },
+                include: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
             }),
-            prisma.userSquads.findMany({
-                where: { userTeamId: { in: opponentTeams.map(team => team.id) } },
-                include: { userteam: { include: { players: { include: { playerStats: true } } } } }
+            prisma.userTeams.findMany({
+                where: {
+                    userId: opponentUserId,
+                    isSquad: true
+                },
+                include: {
+                    players: {
+                        select: {
+                            id: true,
+                            playerName: true,
+                            playerStats: true
+                        }
+                    }
+                }
             })
         ]);
         // squad: team 잘 찾았는지
