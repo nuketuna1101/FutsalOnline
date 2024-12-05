@@ -10,7 +10,7 @@ import { GAME_LOGIC_WEIGHTS, STAMINA_DECAY_RATIO } from '../../config/gameLogic.
 // export 하려는 매치 시뮬레이션 로직
 const simulateMatch = (squad1, squad2) => {
     // 점수 초기화
-    let { squad1Score, squad2Score } = { squad1Score: 0, squad2Score: 0 };
+    let { userSquadScore, opponentSquadScore } = { userSquadScore: 0, opponentSquadScore: 0 };
     // 전처리: 로직계산을 위한 데이터 캐싱
     const squad1Stats = getCachedStats(squad1);
     const squad2Stats = getCachedStats(squad2);
@@ -20,22 +20,24 @@ const simulateMatch = (squad1, squad2) => {
         const squad1TotalStats = calculateTotalStats(squad1Stats);
         const squad2TotalStats = calculateTotalStats(squad2Stats);
         // 시뮬레이션 결과 로그
-        console.log("::: >>> squad1TotalStats.paramAtkPos : " + JSON.stringify(squad1TotalStats.paramAtkPos));
-        console.log("::: >>> squad2TotalStats.paramAtkPos : " + JSON.stringify(squad2TotalStats.paramAtkPos));
+        // console.log("::: >>> squad1TotalStats.paramAtkPos : " + JSON.stringify(squad1TotalStats.paramAtkPos));
+        // console.log("::: >>> squad2TotalStats.paramAtkPos : " + JSON.stringify(squad2TotalStats.paramAtkPos));
 
         // 또는 더 구체적인 속성 출력
-        console.log("::: >>> squad1TotalStats:", squad1TotalStats);
-        console.log("::: >>> squad2TotalStats:", squad2TotalStats);
+        // console.log("::: >>> squad1TotalStats:", squad1TotalStats);
+        // console.log("::: >>> squad2TotalStats:", squad2TotalStats);
 
         // 공격권 결정
         if (getRandOut(squad1TotalStats.paramAtkPos, squad2TotalStats.paramAtkPos)) {
-            squad1Score = simulateSequence(squad1TotalStats.paramAtk, squad2TotalStats.paramDef, squad1Score);
+            userSquadScore = simulateSequence(squad1TotalStats.paramAtk, squad2TotalStats.paramDef, userSquadScore);
         } else {
-            squad2Score = simulateSequence(squad2TotalStats.paramAtk, squad1TotalStats.paramDef, squad2Score);
+            opponentSquadScore = simulateSequence(squad2TotalStats.paramAtk, squad1TotalStats.paramDef, opponentSquadScore);
         }
+        console.log(":: cur score :: " + userSquadScore + " : " + opponentSquadScore);
     }
-
-    return { squad1Score, squad2Score };
+    console.log(":: FINAL score :: " + userSquadScore + " : " + opponentSquadScore);
+    console.log(":: typeof :: " + typeof userSquadScore);
+    return { userSquadScore, opponentSquadScore };
 };
 
 
@@ -61,7 +63,7 @@ const getCachedStats = (squad) => {
         };
 
         // 각 선수의 계산된 값 로그 찍기
-        console.log(`Player ${player.players.playerName} Stats:`, playerStats);
+        // console.log(`Player ${player.players.playerName} Stats:`, playerStats);
         return playerStats;
     });
     return cachedStats;
@@ -74,8 +76,8 @@ const getCachedStats = (squad) => {
 const getRandOut = (x, y) => {
     // x, y가 NaN이 아닌지 확인
     if (isNaN(x) || isNaN(y) || x + y <= 0) {
-        console.log(" :::: value X, Y ::: " + x + " , " + y);
-        console.log(" :::: isNaN(x) || isNaN(y) || x + y <= 0 ::: " + isNaN(x) + " , " + isNaN(y) + " , " + (x + y <= 0));
+        // console.log(" :::: value X, Y ::: " + x + " , " + y);
+        // console.log(" :::: isNaN(x) || isNaN(y) || x + y <= 0 ::: " + isNaN(x) + " , " + isNaN(y) + " , " + (x + y <= 0));
         throw new Error("Invalid arguments: x and y must be valid numbers and their sum must be positive");
     }
 
@@ -91,14 +93,14 @@ const simulateSequence = (atk, def, score) => {
 // 리듀서 사용해서
 const calculateTotalStats = (players) => {
     return players.reduce((total, player) => {
-        console.log(`Calculating stats for ${player.stamina}% stamina - ${player.paramAtkPos} (AtkPos), ${player.paramAtk} (Atk), ${player.paramDef} (Def)`);
+        // console.log(`Calculating stats for ${player.stamina}% stamina - ${player.paramAtkPos} (AtkPos), ${player.paramAtk} (Atk), ${player.paramDef} (Def)`);
 
         total.paramAtkPos += player.paramAtkPos * (player.stamina / 100);
         total.paramAtk += player.paramAtk * (player.stamina / 100);
         total.paramDef += player.paramDef * (player.stamina / 100);
         // 스테미너 10% 감소
         player.stamina *= STAMINA_DECAY_RATIO;
-        console.log(`Player stamina before decay: ${player.stamina}`);
+        // console.log(`Player stamina before decay: ${player.stamina}`);
         return total;
     },
         { paramAtkPos: 0, paramAtk: 0, paramDef: 0 });

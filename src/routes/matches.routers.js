@@ -213,7 +213,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
 
         // utils에서 게임로직통해 매치에서의 양팀 스코어 생성
         const { userSquadScore, opponentSquadScore } = simulateMatch(userSquad, opponentSquad);
-
+        console.log(":: userSquadScore :: " + userSquadScore);
         // 스코어에 따른 승패 판정
         const matchResult =
             userSquadScore > opponentSquadScore ? 'USER1WIN' :
