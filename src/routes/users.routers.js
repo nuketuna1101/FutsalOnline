@@ -245,7 +245,11 @@ router.get('/users/ranks', authMiddleware, async (req, res, next) => {
 //====================================================================================================================
 router.get('/users/ranks/:userId', async (req, res, next) => {
     // auth로부터 user id가져오기
-    const userId = req.params.userId;
+    const userId = parseInt(req.params.userId, 10);
+    // validation: userId 검증
+    if (isNaN(userId)) 
+        return res.status(400).json({ message: '[Bad Request] 유효하지 않은 userId' });
+    
     try {
         const userElo = await prisma.userElo.findUnique({
             where: { userId },
