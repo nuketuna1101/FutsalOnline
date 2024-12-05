@@ -69,10 +69,7 @@ router.post("/upload", async (req, res) => {
 // 유저가 가지고 있는 선수 조회
 router.get("/players/my", Authmiddleware, async (req, res, next) => {
   try {
-    console.log("Authenticated User Object:", req.user); 
-
     const userId = req.user.id; 
-    console.log("User ID:", userId); 
 
     const teamPlayers = await prisma.userTeams.findMany({
       where: {
@@ -82,6 +79,17 @@ router.get("/players/my", Authmiddleware, async (req, res, next) => {
         players: {
           select: {
             playerName: true,
+            playerStats: {
+              select: {
+                technique: true,
+                pass: true,
+                pace: true,
+                agility: true,
+                defense: true,
+                finishing: true,
+                stamina: true,
+              },
+            },
           },
         },
       },
@@ -91,7 +99,34 @@ router.get("/players/my", Authmiddleware, async (req, res, next) => {
       return res.status(404).json({ error: "가지고 있는 선수가 존재하지 않습니다." });
     }
 
-    return res.status(200).json({ data: teamPlayers });
+    // 강화된 스탯을 포함한 데이터를 생성
+    const enhancedPlayers = teamPlayers.map((teamPlayer) => {
+      const { playerUpgrade } = teamPlayer;
+      const { playerStats } = teamPlayer.players;
+
+      // 강화된 스탯 계산
+      const upgradedStats = playerStats
+        ? {
+            technique: playerStats.technique + playerUpgrade,
+            pass: playerStats.pass + playerUpgrade,
+            pace: playerStats.pace + playerUpgrade,
+            agility: playerStats.agility + playerUpgrade,
+            defense: playerStats.defense + playerUpgrade,
+            finishing: playerStats.finishing + playerUpgrade,
+            stamina: playerStats.stamina + playerUpgrade,
+          }
+        : null;
+
+      return {
+        ...teamPlayer,
+        players: {
+          ...teamPlayer.players,
+          playerStats: upgradedStats,
+        },
+      };
+    });
+
+    return res.status(200).json({ data: enhancedPlayers });
   } catch (err) {
     console.error("Error in /players/my:", err);
     next(err);
@@ -112,6 +147,7 @@ router.get("/players", async (req, res, next) => {
             defense: true,
             finishing: true,
             stamina: true,
+            pace: true,
           },
         },
       },
@@ -153,13 +189,14 @@ router.get("/players/:playerId", async (req, res, next) => {
             defense: true,
             finishing: true,
             stamina: true,
+            pace: true,
           },
         },
       },
     });
 
-    if (!player) {
-      return res.status(404).json({ error: "선수가 존재하지 않습니다." });
+    if (!player || !player.playerStats) {
+      return res.status(404).json({ error: "선수가 존재하지 않거나 스탯 정보가 없습니다." });
     }
 
     return res.status(200).json({ data: player });
