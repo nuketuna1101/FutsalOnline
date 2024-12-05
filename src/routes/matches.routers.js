@@ -40,9 +40,10 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
 
         const { userRating } = userElo;
 
+        // # 점수 기반 매칭 시작
         // 매칭 범위 초기 설정
         let range = MATCHING_RANGE;
-        const maxTrials = MATCHMAKING_TRIALS_CONSTRAINTS; // 최대 매칭 시도 횟수
+        const maxTrials = MATCHMAKING_TRIALS_CONSTRAINTS;
         let trials = 0;
 
         let randomOpponent = null;
@@ -69,7 +70,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
             if (validOpponents.length > 0) {
                 randomOpponent = validOpponents[crypto.randomInt(0, validOpponents.length)];
             } else {
-                range += MATCHING_RANGE; // 점수 범위 확장
+                range += MATCHING_RANGE;
             }
         }
 
@@ -127,7 +128,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
                 where: { userId },
                 data: {
                     userRating: {
-                        increment: matchResult === 'USER1WIN' ? ELO_WINNER_INCREMENT : matchResult === 'USER1WIN' ? ELO_LO : 0
+                        increment: matchResult === 'USER1WIN' ? ELO_WINNER_INCREMENT : matchResult === 'USER1WIN' ? ELO_LOSER_DECREMENT : 0
                     }
                 },
             }),
@@ -254,7 +255,7 @@ router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
                 where: { userId },
                 data: {
                     userRating: {
-                        increment: matchResult === 'USER1WIN' ? ELO_WINNER_INCREMENT : matchResult === 'USER1WIN' ? ELO_LO : 0
+                        increment: matchResult === 'USER1WIN' ? ELO_WINNER_INCREMENT : matchResult === 'USER1WIN' ? ELO_LOSER_DECREMENT : 0
                     }
                 },
             }),
@@ -266,7 +267,6 @@ router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
                     }
                 },
             }),
-
         ]);
         // validation: transaction 올바르게 만들었는지
         if (!match)
@@ -305,7 +305,6 @@ router.post('/matches/:userId', authMiddleware, async (req, res, next) => {
 //====================================================================================================================
 router.get('/matches/latest', authMiddleware, async (req, res, next) => {
     // auth로부터 user id가져오기
-    // const { userId } = req.user;
     const userId = req.user.id;
     try {
         // 유저의 최근 10경기 매치 결과 가져오기
@@ -375,154 +374,3 @@ router.get('/matches/recent', authMiddleware, async (req, res, next) => {
 });
 
 export default router;
-
-
-/* Legacy RANDOM MATCHMAKING 
-//====================================================================================================================
-//====================================================================================================================
-// 매치메이킹 API: 랜덤상대 매치메이킹
-// URL: /api/matches
-// method: POST
-// auth: 인증 필요
-// validation:
-//====================================================================================================================
-//====================================================================================================================
-router.post('/matches', authMiddleware, async (req, res, next) => {
-    // 1. auth로부터 user id가져오기 
-    const userId = req.user.id;
-
-    try {
-        // 2. 랜덤 상대 userId 가져오기
-        const randomOpponents = await prisma.users.findMany({
-            where: { id: { not: userId }, }
-        });
-        // validation: 랜덤매칭 후보군 없을시
-        const len = randomOpponents.length;
-        if (len === 0)
-            return res.status(404).json({ message: '[Not Found] 매칭상대 찾기 실패.' });
-        // 랜덤하게 생성
-        const randomIndex = crypto.randomInt(0, len);
-        const randomOpponent = randomOpponents[randomIndex];
-        // 2. userId와 randomOpponent.id 이용해서 스쿼드 넘겨주기.
-        let [userSquad, opponentSquad] = await Promise.all([
-            prisma.userTeams.findMany({
-                where: {
-                    userId: userId,
-                    isSquad: true
-                },
-                include: {
-                    players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            }),
-            prisma.userTeams.findMany({
-                where: {
-                    userId: randomOpponent.id,
-                    isSquad: true
-                },
-                include: {
-                    players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            })
-        ]);
-        // 임시로그
-        console.log("userSquad:", JSON.stringify(userSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
-        console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
-        // squad: team 잘 찾았는지
-        if (userSquad.length === 0)
-            return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
-        // opponentSquad는 squad 설정안한 유저를 찾는 경우 flow 처리해야함
-        let trials = MATCHMAKING_TRIALS_CONSTRAINTS;
-        while (opponentSquad.length === 0) {
-            if (trials <= 0)
-                return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
-            trials--;
-
-            // 랜덤 상대 다시 뽑기
-            const randomIndex = crypto.randomInt(0, len);
-            const randomOpponent = randomOpponents[randomIndex];
-            opponentSquad = await prisma.userTeams.findMany({
-                where: {
-                    userId: randomOpponent.id,
-                    isSquad: true
-                },
-                include: {
-                    players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            });
-        }
-
-
-        // utils에서 게임로직통해 매치에서의 양팀 스코어 생성
-        const { userSquadScore, opponentSquadScore } = simulateMatch(userSquad, opponentSquad);
-        console.log(":: userSquadScore :: " + userSquadScore);
-        // 스코어에 따른 승패 판정
-        const matchResult =
-            userSquadScore > opponentSquadScore ? 'USER1WIN' :
-                userSquadScore < opponentSquadScore ? 'USER2WIN' : 'DRAW';
-
-
-        // TRANSACTION: 매치 결과 생성과 점수 업데이트는 일관성있게 진행되어야함
-        const [match, userElo, opponentElo] = await prisma.$transaction([
-            // 매치 결과 생성
-            prisma.matches.create({
-                data: {
-                    matchUserId1: userId,
-                    matchUserId2: randomOpponent.id,
-                    matchResult: matchResult,
-                }
-            }),
-            // 매치 결과에 따른 elo 레이팅 업데이트
-            prisma.userElo.update({
-                where: { userId },
-                data: { userRating: { increment: matchResult === 'USER1WIN' ? 10 : -10 } },
-            }),
-            prisma.userElo.update({
-                where: { userId: randomOpponent.id },
-                data: { userRating: { increment: matchResult === 'USER2WIN' ? 10 : -10 } },
-            }),
-
-        ]);
-        // validation: transaction 올바르게 만들었는지
-        if (!match)
-            throw new Error('[Transaction Failed] Match creation failed.');
-        if (!userElo || !opponentElo)
-            throw new Error('[Transaction Failed] Score update failed.');
-
-        // 성공적으로 완료된 경우
-        return res.status(200).json({
-            message: '[Success] Match created successfully.',
-            match,
-            user: {
-                userId,
-                userNewRating: userElo.userRating
-            },
-            opponent: {
-                userId: randomOpponent.id,
-                opponentNewRating: opponentElo.userRating
-            },
-            matchResult: { message: `[Match Result] : [${userSquadScore} : ${opponentSquadScore}] >> ${matchResult}` },
-        });
-
-    } catch (error) {
-        next(error);
-    }
-});
-*/
