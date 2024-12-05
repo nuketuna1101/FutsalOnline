@@ -8,6 +8,7 @@ import expressMySQLSession from 'express-mysql-session';
 import LoggingMiddleware from './middlewares/logging.middleware.js';
 import ErrorHandlingMiddleware from './middlewares/errorHandling.middleware.js';
 // routers
+import playerUpgradeRouter from './routes/player.upgrade.router.js';
 import usersRouter from './routes/users.routers.js';
 import playersRouter from './routes/players.routers.js';
 import matchesRouter from './routes/matches.routers.js';
@@ -52,7 +53,7 @@ app.use(
     })
 );
 
-app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter]);
+app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter, playerUpgradeRouter]);
 app.use(ErrorHandlingMiddleware);
 
 

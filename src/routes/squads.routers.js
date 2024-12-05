@@ -7,7 +7,7 @@
 
 import express from 'express';
 import { prisma } from '../utils/prisma/index.js';
-import userAuth from '../middlewares/auth.middleware.js'
+import authMiddleware from '../middlewares/auth.middleware.js'
 
 
 const router = express.Router();
@@ -28,106 +28,45 @@ const router = express.Router();
 //userteams는 여러 개를 추가할 수 있겠다.
 //userSquad에는 각 유저 당 3개만 들어갈 수 있도록 한다.
 //이미 스쿼드가 등록된 경우에는 마지막 Squad를 수정하도록 한다.
-router.post('/squads', userAuth, async (req,res,next)=>{
+router.post('/squads', authMiddleware, async (req,res,next)=>{
     try{
         const testsquard = req.body;
+        const squadList = Object.values(testsquard);
         const user = req.user;
         
 
-        //squad에서 값을 다 가져오자.
-        //유저의 squad 안에 있는 캐릭터 3개를 teams에서 찾아서 다시 squad에 들어가 삭제하자.
-        //teams에서 소속된 친구들을 가져오도록 하자.
-        //팀즈에서 데이터들을 가져오자.
-        //팀즈 안에서 index 값에 해당하는 애들을 추가하도록 하자.
-        //일단은 players list에서 먼저 받아오고 그 다음에 데이터가 채워지면 teams에서 받아오도록 하자.
+        //teams 내에 현재 로그인한 유저의 것이며 isSquad가 참인 것을 모두 조회한다.
+        //그것들을 모두 squad 해제시킨다.
+        //그 다음 지정 받은 index를 베이스로 값을 가져오도록 하자.
         const squadTransaction = await prisma.$transaction(async (tx)=>{
-            const allSquard = await tx.userSquads.findMany({});
-            let squad_list = [];
-            for(let i = 0;i<allSquard.length;i++)
-            {
-                squad_list.push(allSquard[i].userTeamId);
-            }
-
-            //console.log(squad_list);
-            let re_list = [];
-
-            for(let i = 0;i<squad_list.length;i++)
-            {
-                const squadedCharacter = await tx.userTeams.findFirst({
-                    where : {
-                        userId : +user.id,
-                        id : squad_list[i]
-                    }
-                })
-                if(!squadedCharacter)
-                {
-                    console.log("비었음")
-                }
-                else
-                {
-                    re_list.push(squadedCharacter.id);
-                }
-                
-            }
-
-            const deletedSquad = await tx.userSquads.deleteMany({
+            //먼저 teams 내의 squad 에서 user의 팀을 해제한다.
+            const updatedTeam = await tx.userTeams.updateMany({
                 where : {
-                    userTeamId : {
-                        in : re_list
+                    AND : {
+                        userId : user.id,
+                        isSquad : true
                     }
+                },
+                data : {
+                    isSquad : false
                 }
             })
 
-            const currentTeamSqard = await tx.userTeams.findMany({
+            //다음 입력 받은 인덱스를 받아 팀을 만든다.
+            const updatingTeam = await tx.userTeams.updateMany({
                 where : {
-                    userId : user.id
-                }
-            });
-
-            const teamId = [];
-
-            for(let i = 0;i<currentTeamSqard.length;i++)
-            {
-                teamId.push(currentTeamSqard[i].id);
-            }
-
-            for(let i of Object.values(testsquard))
-            {
-                if(teamId.includes(i))
-                {
-                    await tx.userSquads.create({
-                        data : {
-                            userteam : {
-                                connect : {
-                                    id : i
-                                }
-                            }
+                    AND : {
+                        userId : user.id,
+                        id : {
+                            in : squadList
                         }
-                    })
+                    }
+                },
+                data : {
+                    isSquad : true
                 }
-                else
-                {
-                    throw new Error("invaildIndex");
-                }
-            }
-
-           
-
-            
-
-            return [currentTeamSqard];
+            })
         })
-
-        // if(!squadTransaction)
-        // {
-            
-        //     return res.status(404).json({message : "값이 없음"})
-        // }
-        // else
-        // {
-        //     console.log(squadTransaction)
-        //     return res.status(200).json({message : "스쿼드 선발 완료!"})
-        // }
 
         
         return res.status(200).json({message : "스쿼드 편성 완료!"})
@@ -147,43 +86,20 @@ router.post('/squads', userAuth, async (req,res,next)=>{
 })
 
 //squad 출력
-router.get('/squads',userAuth, async (req,res,next)=>{
+router.get('/squads',authMiddleware, async (req,res,next)=>{
     try{
         const user = req.user;
         const squadTransaction = await prisma.$transaction(async (tx)=>{
-            const allSquard = await tx.userSquads.findMany({});
-            let squad_list = [];
-            for(let i = 0;i<allSquard.length;i++)
-            {
-                squad_list.push(allSquard[i].userTeamId);
-            }
-
-            let re_list = [];
-
-            for(let i = 0;i<squad_list.length;i++)
-            {
-                const squadedCharacter = await tx.userTeams.findFirst({
-                    where : {
-                        userId : +user.id,
-                        id : squad_list[i]
+            const UserSquads = await tx.userTeams.findMany({
+                where : {
+                    AND : {
+                        userId : user.id,
+                        isSquad : true
                     }
-                })
-                if(!squadedCharacter)
-                {
-                    console.log("비었음")
                 }
-                else
-                {
-                    re_list.push(squadedCharacter);
-                }
-                
-            }
+            })
 
-            
-
-            
-
-            return re_list;
+            return UserSquads;
         })
 
         return res.status(201).json({data : squadTransaction})

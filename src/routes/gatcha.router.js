@@ -1,6 +1,6 @@
 import express from 'express';
 import { prisma } from '../utils/prisma/index.js';
-import userAuth from '../middlewares/auth.middleware.js'
+import authMiddleware from '../middlewares/auth.middleware.js'
 import Jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 
@@ -10,7 +10,7 @@ const gatchaPay = 100;
 
 
 //가챠 뽑기 API
-router.post('/gatcha',userAuth, async (req, res, next) => {
+router.post('/gatcha',authMiddleware, async (req, res, next) => {
     try {
         //const players = await prisma.users.findMany({});
         //유저 정보를 전부 받아온 다음
