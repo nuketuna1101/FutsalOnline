@@ -8,15 +8,16 @@ datasource db {
 }
 
 model Users {
-  id             Int          @id @default(autoincrement()) @map("id")
-  nickname       String       @unique @map("nickname")
-  password       String       @map("password")
-  userName       String       @map("userName")
-  matchesAsUser1 Matches[]    @relation("User1Matches")
-  matchesAsUser2 Matches[]    @relation("User2Matches")
+  id             Int              @id @default(autoincrement()) @map("id")
+  nickname       String           @unique @map("nickname")
+  password       String           @map("password")
+  userName       String           @map("userName")
+  matchesAsUser1 Matches[]        @relation("User1Matches")
+  matchesAsUser2 Matches[]        @relation("User2Matches")
   UserAccount    UserAccount?
   UserElo        UserElo?
   userTeams      UserTeams[]
+  // market         TransferMarket[]
 
   @@map("Users")
 }
@@ -59,6 +60,8 @@ model Players {
   playerStats PlayerStats?
   userTeams   UserTeams[]
 
+  // market TransferMarket[]
+
   @@map("Players")
 }
 
@@ -68,6 +71,9 @@ model TransferMarket {
   userId   Int      @map("userId")
   price    Int      @map("price")
   createAt DateTime @default(now()) @map("createdAt")
+
+  // players Players @relation(fields: [playerId], references: [id], onDelete: NoAction)
+  // users   Users   @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@map("TransferMarket")
 }

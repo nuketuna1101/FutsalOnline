@@ -165,6 +165,7 @@ router.get('/users/squad/:userId', async (req, res, next) => {
                 players: {
                     include: {
                         playerStats: true,
+
                     }
                 },
             },

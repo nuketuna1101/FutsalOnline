@@ -30,10 +30,18 @@ const router = express.Router();
 //이미 스쿼드가 등록된 경우에는 마지막 Squad를 수정하도록 한다.
 router.post('/squads', authMiddleware, async (req,res,next)=>{
     try{
-        const testsquard = req.body;
-        const squadList = Object.values(testsquard);
+        const {squadList} = req.body;
         const user = req.user;
+        console.log(squadList);
         
+        for(let i of squadList)
+        {
+            if(typeof i != 'number')
+            {
+                console.log(typeof i);
+                throw new Error("입력 값이 잘못되었습니다.")
+            }
+        }
 
         //teams 내에 현재 로그인한 유저의 것이며 isSquad가 참인 것을 모두 조회한다.
         //그것들을 모두 squad 해제시킨다.
@@ -66,6 +74,30 @@ router.post('/squads', authMiddleware, async (req,res,next)=>{
                     isSquad : true
                 }
             })
+
+            const check = await tx.userTeams.findMany({
+                where : {
+                    userId : user.id,
+                    AND : {
+                        isSquad : true
+                    }
+                }
+            })
+
+            console.log(check);
+
+            if(!updatingTeam)
+            {
+                throw new Error("업데이트가 되지 않았습니다.")
+            }
+
+            if(check.length !== 3)
+            {
+                throw new Error("숫자가 다릅니다.")
+            }
+
+            
+            
         })
 
         
