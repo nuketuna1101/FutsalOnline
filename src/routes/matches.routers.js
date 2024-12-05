@@ -25,8 +25,6 @@ const router = express.Router();
 router.post('/matches', authMiddleware, async (req, res, next) => {
     // 1. auth로부터 user id가져오기 
     const userId = req.user.id;
-    if (!userId)
-        return res.status(400).json({ message: 'User ID is missing' });
 
     try {
         // 2. 랜덤 상대 userId 가져오기
@@ -115,18 +113,40 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
             userSquadScore > opponentSquadScore ? 'USER1WIN' :
                 userSquadScore < opponentSquadScore ? 'USER2WIN' : 'DRAW';
 
-        // 매치 생성
-        const match = await prisma.matches.create({
-            data: {
-                matchUserId1: userId,
-                matchUserId2: randomOpponent.id,
-                matchResult: matchResult,
-            }
-        });
 
+        // TRANSACTION: 매치 결과 생성과 점수 업데이트는 일관성있게 진행되어야함
+        const [match, userElo, opponentElo] = await prisma.$transaction([
+            // 매치 결과 생성
+            prisma.matches.create({
+                data: {
+                    matchUserId1: userId,
+                    matchUserId2: randomOpponent.id,
+                    matchResult: matchResult,
+                }
+            }),
+            // 매치 결과에 따른 elo 레이팅 업데이트
+            prisma.userElo.update({
+                where: { userId },
+                data: { userRating: { increment: matchResult === 'USER1WIN' ? 10 : -10 } },
+            }),
+            prisma.userElo.update({
+                where: { userId: randomOpponent.id },
+                data: { userRating: { increment: matchResult === 'USER2WIN' ? 10 : -10 } },
+            }),
+
+        ]);
+        // validation: transaction 올바르게 만들었는지
+        if (!match)
+            throw new Error('[Transaction Failed] Match creation failed.');
+        if (!userElo || !opponentElo)
+            throw new Error('[Transaction Failed] Score update failed.');
+
+        // 성공적으로 완료된 경우
         return res.status(200).json({
-            message: '[Success] match created.',
+            message: '[Success] Match created successfully.',
             match,
+            user: { userId, userSquadScore },
+            opponent: { userId: randomOpponent.id, opponentSquadScore },
         });
 
     } catch (error) {
