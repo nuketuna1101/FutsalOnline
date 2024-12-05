@@ -27,82 +27,82 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
     const userId = req.user.id;
 
     try {
-        // 2. 랜덤 상대 userId 가져오기
-        const randomOpponents = await prisma.users.findMany({
-            where: { id: { not: userId }, }
+        // 현재 유저의 Elo 점수 가져오기
+        const userElo = await prisma.userElo.findUnique({
+            where: { userId },
+            select: { userRating: true },
         });
-        // validation: 랜덤매칭 후보군 없을시
-        const len = randomOpponents.length;
-        if (len === 0)
-            return res.status(404).json({ message: '[Not Found] 매칭상대 찾기 실패.' });
-        // 랜덤하게 생성
-        const randomIndex = crypto.randomInt(0, len);
-        const randomOpponent = randomOpponents[randomIndex];
-        // 2. userId와 randomOpponent.id 이용해서 스쿼드 넘겨주기.
-        let [userSquad, opponentSquad] = await Promise.all([
-            prisma.userTeams.findMany({
+
+        // validation: 유저 Elo 점수 확인
+        if (!userElo)
+            return res.status(404).json({ message: '[Not Found] 유저의 Elo 점수를 찾을 수 없음.' });
+
+        const { userRating } = userElo;
+
+        // 매칭 범위 초기 설정
+        let range = 50; // Elo 점수 차이 범위 (초기값)
+        const maxTrials = 20; // 최대 매칭 시도 횟수
+        let trials = 0;
+
+        let randomOpponent = null;
+        while (!randomOpponent && trials < maxTrials) {
+            trials++;
+            const opponents = await prisma.userElo.findMany({
                 where: {
-                    userId: userId,
-                    isSquad: true
+                    userId: { not: userId },
+                    userRating: { gte: userRating - range, lte: userRating + range },
                 },
+                select: { userId: true, userRating: true },
+            });
+
+            // 스쿼드가 존재하는 유저만 필터링
+            const validOpponents = [];
+            for (const opponent of opponents) {
+                const squadExists = await prisma.userTeams.findFirst({
+                    where: { userId: opponent.userId, isSquad: true },
+                });
+
+                if (squadExists) validOpponents.push(opponent);
+            }
+
+            if (validOpponents.length > 0) {
+                randomOpponent = validOpponents[crypto.randomInt(0, validOpponents.length)];
+            } else {
+                range += 50; // 점수 범위 확장
+            }
+        }
+
+        // validation: 매칭 상대 찾기 실패
+        if (!randomOpponent)
+            return res.status(404).json({ message: '[Not Found] 적합한 매칭 상대를 찾을 수 없음.' });
+
+        // 유저 스쿼드 및 상대 스쿼드 가져오기
+        const [userSquad, opponentSquad] = await Promise.all([
+            prisma.userTeams.findMany({
+                where: { userId, isSquad: true },
                 include: {
                     players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
+                        select: { id: true, playerName: true, playerStats: true },
+                    },
+                },
             }),
             prisma.userTeams.findMany({
-                where: {
-                    userId: randomOpponent.id,
-                    isSquad: true
-                },
+                where: { userId: randomOpponent.userId, isSquad: true },
                 include: {
                     players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            })
+                        select: { id: true, playerName: true, playerStats: true },
+                    },
+                },
+            }),
         ]);
-        // 임시로그
-        console.log("userSquad:", JSON.stringify(userSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
-        console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
-        // squad: team 잘 찾았는지
+        console.log(" ::: randomOpponent.userId >>> ::: " + randomOpponent.userId);
+        console.log(" ::: opponentSquad.length >>> ::: " + opponentSquad.length);
+        // validation: 스쿼드 확인
         if (userSquad.length === 0)
-            return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
-        // opponentSquad는 squad 설정안한 유저를 찾는 경우 flow 처리해야함
-        let trials = MATCHMAKING_TRIALS_CONSTRAINTS;
-        while (opponentSquad.length === 0) {
-            if (trials <= 0)
-                return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
-            trials--;
+            return res.status(404).json({ message: '[Not Found] 유저 스쿼드를 찾을 수 없음.' });
+        if (opponentSquad.length === 0)
+            return res.status(404).json({ message: '[Not Found] 상대 스쿼드를 찾을 수 없음.' });
 
-            // 랜덤 상대 다시 뽑기
-            const randomIndex = crypto.randomInt(0, len);
-            const randomOpponent = randomOpponents[randomIndex];
-            opponentSquad = await prisma.userTeams.findMany({
-                where: {
-                    userId: randomOpponent.id,
-                    isSquad: true
-                },
-                include: {
-                    players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            });
-        }
 
 
         // utils에서 게임로직통해 매치에서의 양팀 스코어 생성
@@ -115,12 +115,12 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
 
 
         // TRANSACTION: 매치 결과 생성과 점수 업데이트는 일관성있게 진행되어야함
-        const [match, userElo, opponentElo] = await prisma.$transaction([
+        const [match, userEloUpdate, opponentEloUpdate] = await prisma.$transaction([
             // 매치 결과 생성
             prisma.matches.create({
                 data: {
                     matchUserId1: userId,
-                    matchUserId2: randomOpponent.id,
+                    matchUserId2: randomOpponent.userId,
                     matchResult: matchResult,
                 }
             }),
@@ -130,7 +130,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
                 data: { userRating: { increment: matchResult === 'USER1WIN' ? 10 : -10 } },
             }),
             prisma.userElo.update({
-                where: { userId: randomOpponent.id },
+                where: { userId: randomOpponent.userId },
                 data: { userRating: { increment: matchResult === 'USER2WIN' ? 10 : -10 } },
             }),
 
@@ -138,7 +138,7 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
         // validation: transaction 올바르게 만들었는지
         if (!match)
             throw new Error('[Transaction Failed] Match creation failed.');
-        if (!userElo || !opponentElo)
+        if (!userEloUpdate || !opponentEloUpdate)
             throw new Error('[Transaction Failed] Score update failed.');
 
         // 성공적으로 완료된 경우
@@ -147,11 +147,11 @@ router.post('/matches', authMiddleware, async (req, res, next) => {
             match,
             user: {
                 userId,
-                userNewRating: userElo.userRating
+                userNewRating: userEloUpdate.userRating,
             },
             opponent: {
                 userId: randomOpponent.id,
-                opponentNewRating: opponentElo.userRating
+                opponentNewRating: opponentEloUpdate.userRating,
             },
             matchResult: { message: `[Match Result] : [${userSquadScore} : ${opponentSquadScore}] >> ${matchResult}` },
         });
@@ -370,7 +370,7 @@ router.get('/matches/recent', authMiddleware, async (req, res, next) => {
 export default router;
 
 
-/* Legacy RANDOM MATCHMAKING API
+/* Legacy RANDOM MATCHMAKING 
 //====================================================================================================================
 //====================================================================================================================
 // 매치메이킹 API: 랜덤상대 매치메이킹
