@@ -15,7 +15,7 @@ const router = express.Router();
 // 회원가입
 router.post('/users/sign-up', async (req, res, next) => {
     try {
-        const { userName, password, nickname } = req.body;
+        const { userName, password, confirmPassword, nickname } = req.body;
 
         const isExistId = await prisma.users.findFirst({
             where: { nickname }
@@ -35,6 +35,9 @@ router.post('/users/sign-up', async (req, res, next) => {
             return res.status(401).json({ Message: '비밀번호는 6자리 이상이어야 합니다.' });
         } else if (conLowAndNumber(password) === false) {
             return res.status(401).json({ Message: '비밀번호는 영어소문자 + 숫자로 이루어져야합니다.' })
+        }
+        if(password != confirmPassword){
+          return res.status(401).json({message: "비밀번호가 다릅니다." });
         }
 
         // 비밀번호 hash작업
