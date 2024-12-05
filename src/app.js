@@ -19,7 +19,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.CURRENT_PORT;
+const PORT = 3321;
 
 const MySQLStore = expressMySQLSession(expressSession);
 const sessionStore = new MySQLStore({
@@ -29,7 +29,7 @@ const sessionStore = new MySQLStore({
   port: process.env.DATABASE_PORT,
   database: process.env.DATABASE_NAME,
   expiration: 1000 * 60 * 60 * 24,
-  createDatabaseTable: true,
+  createDatabaseTable: true, 
 });
 
 // Middlewares
