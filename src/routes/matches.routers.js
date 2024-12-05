@@ -11,111 +11,7 @@ import authMiddleware from '../middlewares/auth.middleware.js';
 import simulateMatch from '../utils/gameLogic/gameLogic.js';
 import crypto from 'crypto';
 
-
 const router = express.Router();
-
-async function legacyGetUserAndOppSquad() {
-    // 2. userId로부터 team > squad 찾기
-    // refactor: promise를 통한 병렬 처리 최적화
-    const [userTeams, opponentTeams] = await Promise.all([
-        prisma.userTeams.findMany({ where: { userId } }),
-        prisma.userTeams.findMany({ where: { userId: randomOpponent.id } })
-    ]);
-    // validation: team 잘 찾았는지
-    if (userTeams.length === 0)
-        return res.status(404).json({ message: '[Not Found] 유저 팀 찾지못함' });
-    if (opponentTeams.length === 0)
-        return res.status(404).json({ message: '[Not Found] 상대 팀 찾지못함' });
-    // sqaud 찾기
-    const [userSquad, opponentSquad] = await Promise.all([
-        prisma.userSquads.findMany({
-            where: { userTeamId: { in: userTeams.map(team => team.id) } },
-            include: { userteam: { include: { players: { include: { playerStats: true } } } } }
-        }),
-        prisma.userSquads.findMany({
-            where: { userTeamId: { in: opponentTeams.map(team => team.id) } },
-            include: { userteam: { include: { players: { include: { playerStats: true } } } } }
-        })
-    ]);
-    // squad: team 잘 찾았는지
-    if (userSquad.length === 0)
-        return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
-    if (opponentSquad.length === 0)
-        return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
-
-    return { userSquad, opponentSquad };
-}
-
-
-
-
-/*
-router.post('/matches', authMiddleware, async (req, res, next) => {
-    const userId = req.user.id;
-    console.log(":: USER OBJECT : ", req.user);
-    console.log(":: USERID : ", userId);
-    
-    if (!userId)
-        return res.status(400).json({ message: 'User ID is missing' });
-
-    try {
-        const randomOpponents = await prisma.users.findMany({
-            where: { id: { not: userId } },
-        });
-        
-        const len = randomOpponents.length;
-        if (len === 0)
-            return res.status(404).json({ message: '[Not Found] 매칭상대 찾기 실패.' });
-
-        const randomIndex = crypto.randomInt(0, len);
-        const randomOpponent = randomOpponents[randomIndex];
-
-        const [userSquad, opponentSquad] = await Promise.all([
-            prisma.userTeams.findMany({
-                where: {
-                    userId: userId,
-                    isSquad: true
-                },
-                include: {
-                    players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            }),
-            prisma.userTeams.findMany({
-                where: {
-                    userId: randomOpponent.id,
-                    isSquad: true
-                },
-                include: {
-                    players: {
-                        select: {
-                            id: true,
-                            playerName: true,
-                            playerStats: true
-                        }
-                    }
-                }
-            })
-        ]);
-
-        if (userSquad.length === 0)
-            return res.status(404).json({ message: '[Not Found] 유저 스쿼드 찾지못함' });
-        if (opponentSquad.length === 0)
-            return res.status(404).json({ message: '[Not Found] 상대 스쿼드 찾지못함' });
-
-        console.log("userSquad:", JSON.stringify(userSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
-        console.log("opponentSquad:", JSON.stringify(opponentSquad, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2));
-
-        const { userSquadScore, opponentSquadScore } = simulateMatch(userSquad, opponentSquad);
-
-});
-*/
-
 
 //====================================================================================================================
 //====================================================================================================================
@@ -372,9 +268,10 @@ router.get('/matches/latest', authMiddleware, async (req, res, next) => {
 //====================================================================================================================
 router.get('/matches/recent', authMiddleware, async (req, res, next) => {
     // auth로부터 user id가져오기
-    const { userId } = req.user;
+    const userId = req.user.id;
     // 쿼리 파라미터에서 가져온 count (default 및 최대제약: 10) // 추후에 config에 뺄 것
     const count = parseInt(req.query.count, 10) || 10;
+    console.log(":: >> count >> :: " + count);
     try {
         // 유저의 최근 10경기 매치 결과 가져오기
         const recentMatches = await prisma.matches.findMany({
@@ -391,7 +288,7 @@ router.get('/matches/recent', authMiddleware, async (req, res, next) => {
                 user2: { select: { nickname: true } },
             },
         });
-
+        console.log(":: recentMatches.length : " + recentMatches.length);
         // validation: 매치기록이 아예 없을 경우
         if (recentMatches.length === 0)
             return res.status(200).json({ message: '최근 매치기록이 없습니다.', });
@@ -402,4 +299,5 @@ router.get('/matches/recent', authMiddleware, async (req, res, next) => {
         next(error);
     }
 });
+
 export default router;
