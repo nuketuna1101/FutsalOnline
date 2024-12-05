@@ -25,7 +25,7 @@ export default async function (req, res, next) {
         const id = decodedToken.id;
 
         console.log("Decoded Token:", decodedToken);
-        console.log("Authenticated User:", req.user);
+        console.log("Decoded Token ID:", decodedToken.id);
         
         const user = await prisma.users.findFirst({
             where: { id: +id },

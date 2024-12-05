@@ -8,6 +8,7 @@ import expressMySQLSession from 'express-mysql-session';
 import LoggingMiddleware from './middlewares/logging.middleware.js';
 import ErrorHandlingMiddleware from './middlewares/errorHandling.middleware.js';
 // routers
+import playerUpgradeRouter from './routes/player.upgrade.router.js';
 import usersRouter from './routes/users.routers.js';
 import playersRouter from './routes/players.routers.js';
 import matchesRouter from './routes/matches.routers.js';
@@ -19,7 +20,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.CURRENT_PORT;
+const PORT = 3321;
 
 const MySQLStore = expressMySQLSession(expressSession);
 const sessionStore = new MySQLStore({
@@ -29,7 +30,7 @@ const sessionStore = new MySQLStore({
   port: process.env.DATABASE_PORT,
   database: process.env.DATABASE_NAME,
   expiration: 1000 * 60 * 60 * 24,
-  createDatabaseTable: true,
+  createDatabaseTable: true, 
 });
 
 // Middlewares
@@ -53,7 +54,7 @@ app.use(
     })
 );
 
-app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter,marketRouter]);
+app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter, playerUpgradeRouter,marketRouter]);
 app.use(ErrorHandlingMiddleware);
 
 

@@ -51,6 +51,7 @@ router.post("/upload", async (req, res) => {
           playerId: newPlayer.id,
           technique: parseInt(player.technique || 0),
           pass: parseInt(player.pass || 0),
+          pace: parseInt(player.pace || 0),
           agility: parseInt(player.agility || 0),
           defense: parseInt(player.defense || 0),
           finishing: parseInt(player.finishing || 0),
