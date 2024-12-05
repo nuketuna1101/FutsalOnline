@@ -17,10 +17,10 @@ router.post('/transfermarket', authMiddleware, async (req, res, next) => {
             const deletedTeams = await tx.userTeams.delete({
                 where: {
                     id: userTeamId,
-                    AND: {
-                        userId: user.id,
-                        isSquad: false
-                    }
+                    AND: [
+                       { userId: user.id},
+                        {isSquad: false}
+                    ]
                 }
             });
 
@@ -202,9 +202,9 @@ router.delete('/transfermarket', authMiddleware, async (req, res, next) => {
             const cancelMarket = await tx.transferMarket.delete({
                 where: {
                     id: transferMarketId,
-                    AND: {
+                    AND: [{
                         userId: user.id
-                    }
+                    }]
                 }
             })
 
