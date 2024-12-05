@@ -10,6 +10,7 @@ import { prisma } from '../utils/prisma/index.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import authMiddleware from '../middlewares/auth.middleware.js';
+import { INITIAL_ELO } from '../config/elo.config.js';
 
 const router = express.Router();
 // 회원가입
@@ -40,8 +41,9 @@ router.post('/users/sign-up', async (req, res, next) => {
         // 비밀번호 hash작업
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const [Users, UserAccount] = await prisma.$transaction(async (tx) => {
+        const [Users, UserAccount, UserElo] = await prisma.$transaction(async (tx) => {
             try {
+                // 유저 테이블 추가
                 const users = await tx.users.create({
                     data: {
                         nickname,
@@ -49,15 +51,22 @@ router.post('/users/sign-up', async (req, res, next) => {
                         userName,
                     },
                 });
-
+                // 유저 어카운트 테이블 추가
                 const userAccount = await tx.userAccount.create({
                     data: {
                         userId: users.id,
                         cash: 5000,
                     },
                 });
+                // 유저 elo 테이블 추가
+                const userElo = await tx.userElo.create({
+                    data: {
+                        userId: users.id,
+                        userRating: INITIAL_ELO,
+                    },
+                });
 
-                return [users, userAccount];
+                return [users, userAccount, userElo];
             } catch (error) {
                 console.error("Transaction Error:", error);
                 // 트랜잭션 실패 시 예외를 다시 던짐
@@ -144,9 +153,9 @@ router.post('/users/cash', authMiddleware, async (req, res, next) => {
 });
 
 // 다른 유저의 스쿼드 조회
-router.get('/users/squad', async (req, res, next) => {
+router.get('/users/squad/:userId', async (req, res, next) => {
     try {
-        const userId = Number(req.query.userId);
+        const userId = Number(req.params.userId);
         const sqauds = await prisma.userTeams.findMany({
             where: {
                 userId: userId,
@@ -155,21 +164,12 @@ router.get('/users/squad', async (req, res, next) => {
             include: {
                 players: {
                     include: {
-                        playerStats: {
-                            select: {
-                                technique: true,
-                                pass: true,
-                                agility: true,
-                                defense: true,
-                                finishing: true,
-                                stamina: true,
-                            },
-                        }
+                        playerStats: true,
                     }
                 },
             },
         });
-        if(!sqauds){
+        if (!sqauds) {
             return res.status(404).json({ message: '사용자의 스쿼드가 없습니다.' });
         };
         return res.status(200).json({ data: sqauds });
@@ -177,5 +177,8 @@ router.get('/users/squad', async (req, res, next) => {
         next(err)
     }
 });
+
+
+// 탑 랭커 조회
 
 export default router;
