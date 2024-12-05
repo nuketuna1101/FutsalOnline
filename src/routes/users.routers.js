@@ -295,5 +295,46 @@ router.get('/users/ranks/:userId', async (req, res, next) => {
 });
 
 
+//====================================================================================================================
+//====================================================================================================================
+// 미인증 상태로, userRating 기반하여 상위 랭커 조회
+// response: 상위 n명(최대n 제한)의 userRating 수치, 실제 몇번째 랭킹인지
+//====================================================================================================================
+//====================================================================================================================
+router.get('/users/ranks/top', async (req, res, next) => {
+    // 쿼리 파라미터에서 가져온 count (default 및 최대제약: 10)
+    const count = Math.min(parseInt(req.query.count, 10) || 10, 10);
+    try {
+        // 상위 랭커 정보 가져오기
+        const topRankers = await prisma.userElo.findMany({
+            orderBy: { userRating: 'desc' },
+            take: count,
+            select: {
+                userId: true,
+                userRating: true,
+                user: { select: { userName: true, nickname: true } },
+            },
+        });
+        // validation: 랭커가 아무도 존재하지 않음
+        if (topRankers.length === 0)
+            return res.status(404).json({ message: '[Not Found] 그 어느 랭커가 존재하지 않음.' });
+
+        // response 반환
+        const response = topRankers.map((user, index) => ({
+            rank: index + 1,
+            userId: user.userId,
+            nickname: user.user.nickname,
+            userName: user.user.userName,
+            userRating: user.userRating,
+        }));
+
+        return res.status(200).json({
+            message: '[Success] Top Rankers below.',
+            topRankers: response,
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 export default router;
