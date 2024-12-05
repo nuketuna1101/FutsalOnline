@@ -102,8 +102,11 @@ router.post(
 
       const randomValue = Math.random() * 100;
 
+       // playerUpgrade 초기화
+      let playerUpgrade = selectPlayer.playerUpgrade;
+
       let result;
-      let upgradedStats = null; // 초기화
+      let upgradedStats = null; 
 
       if (randomValue < successRate) {
         const updatedUserTeam = await prisma.userTeams.update({
@@ -112,7 +115,7 @@ router.post(
           select: { playerUpgrade: true },
         });
 
-        const playerUpgrade = updatedUserTeam.playerUpgrade;
+        playerUpgrade = updatedUserTeam.playerUpgrade;
 
         const playerStats = await prisma.playerStats.findUnique({
           where: { playerId: playerId },
