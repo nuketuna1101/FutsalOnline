@@ -12,12 +12,8 @@ import csvToJson from "../public/csvToJson";
 
 const router = express.Router();
 
-/* TO DO */
 //선수 강화
-router.post(
-  "/players/:userTeamId/upgrade",
-  authMiddleware,
-  async (req, res, next) => {
+router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, next) => {
     try {
       const userId = req.user.id;
       const userTeamId = parseInt(req.params.userTeamId, 10);
@@ -36,16 +32,15 @@ router.post(
           players: {
             select: {
               playerName: true,
-              id: true, // playerId를 가져오기 위해 추가
+              // playerId를 가져오기 위해 추가
+              id: true, 
             },
           },
         },
       });
 
       if (!selectPlayer) {
-        return res
-          .status(404)
-          .json({ message: "사용자가 이 선수를 가지고 있지 않습니다." });
+        return res.status(404).json({ message: "사용자가 이 선수를 가지고 있지 않습니다." });
       }
 
       // CSV 파일 경로를 지정하세요
