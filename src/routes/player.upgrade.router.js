@@ -110,7 +110,29 @@ router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, nex
           where: { id: userTeamId },
           data: { playerUpgrade: { increment: 1 } },
         });
-        result = "강화 성공";
+
+        // 해당 선수의 스탯 가져오기
+        const playerStats = await prisma.playerStats.findUnique({
+        where: { playerId: userTeamId },
+        });
+
+        if (playerStats) {
+          // 모든 스탯에 `playerUpgrade`만큼 증가
+          await prisma.playerStats.update({
+          where: { playerId: userTeamId },
+          data: {
+            technique: playerStats.technique + 1,
+            pass: playerStats.pass + 1,
+            pace: playerStats.pace + 1,
+            agility: playerStats.agility + 1,
+            defense: playerStats.defense + 1,
+            finishing: playerStats.finishing + 1,
+            stamina: playerStats.stamina + 1,
+          },
+        });
+      }
+
+      result = "강화 성공";
       } else if (randomValue < successRate + faultRate) {
         // 강화 실패: 강화 레벨 다운 but 1랭크이면 1유지
         if(selectPlayer.playerUpgrade > 1){

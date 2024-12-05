@@ -82,6 +82,17 @@ router.get("/players/my", Authmiddleware, async (req, res, next) => {
         players: {
           select: {
             playerName: true,
+            playerStats: {
+              select: {
+                technique: true,
+                pass: true,
+                pace: true,
+                agility: true,
+                defense: true,
+                finishing: true,
+                stamina: true,
+              },
+            },
           },
         },
       },
