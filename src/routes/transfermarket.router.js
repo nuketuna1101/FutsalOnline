@@ -90,6 +90,7 @@ router.post('/transfermarket', authMiddleware, async (req, res, next) => {
             }
         })
 
+        //구매한 사람의 돈은 줄어들고
         await tx.userAccount.update({
             where: {
                 id: user.id
@@ -97,6 +98,18 @@ router.post('/transfermarket', authMiddleware, async (req, res, next) => {
             data: {
                 cash: {
                     decrement: deleted.price
+                }
+            }
+        })
+        
+        //판매한 사람의 돈은 늘어난다.
+        await tx.userAccount.update({
+            where : {
+                id : deleted.userId
+            },
+            data : {
+                cash : {
+                    increment : deleted.price
                 }
             }
         })
