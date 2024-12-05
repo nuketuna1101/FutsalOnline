@@ -181,7 +181,7 @@ router.get('/users/squad/:userId', async (req, res, next) => {
 //====================================================================================================================
 //====================================================================================================================
 // 인증된 유저의 userRating 기반한 랭킹 조회
-// 결과 정보: 유저의 userRating 수치, 실제 몇번째 랭킹인지, user를 포함해서 userRating 수치가 인접한 5명 목록 조회 
+// response: 유저의 userRating 수치, 실제 몇번째 랭킹인지, user를 포함해서 userRating 수치가 인접한 5명 목록 조회 
 // (유저가 1등이라면 1,2,3,4,5등, 유저가 9등이라면, 7,8,9,10,11 등)
 //====================================================================================================================
 //====================================================================================================================
@@ -235,6 +235,65 @@ router.get('/users/ranks', authMiddleware, async (req, res, next) => {
         next(error);
     }
 });
-// 탑 랭커 조회
+
+//====================================================================================================================
+//====================================================================================================================
+// 미인증 상태로, 지정한 유저의 userRating 기반한 랭킹 조회
+// response: 유저의 userRating 수치, 실제 몇번째 랭킹인지, user를 포함해서 userRating 수치가 인접한 5명 목록 조회 
+// (유저가 1등이라면 1,2,3,4,5등, 유저가 9등이라면, 7,8,9,10,11 등)
+//====================================================================================================================
+//====================================================================================================================
+router.get('/users/ranks/:userId', async (req, res, next) => {
+    // auth로부터 user id가져오기
+    const userId = req.params.userId;
+    try {
+        const userElo = await prisma.userElo.findUnique({
+            where: { userId },
+            select: { userRating: true },
+        });
+        // validation: 유저 elo 찾았는지
+        if (!userElo)
+            return res.status(404).json({ message: '[Not Found] 유저의 랭킹 정보 찾을 수 없음.' });
+
+        // 유저의 rating 점수
+        const userRating = userElo.userRating;
+        // 2. 요청 유저의 랭킹 계산
+        const userRank = await prisma.userElo.count({
+            where: { userRating: { gt: userRating } },
+        }) + 1;
+
+        // 3. 인접한 5명 정보 조회
+        const neighbors = await prisma.userElo.findMany({
+            orderBy: { userRating: 'desc' },
+            skip: Math.max(userRank - 3, 0),
+            take: 5,
+            select: {
+                userId: true,
+                userRating: true,
+                user: { select: { userName: true, nickname: true } },
+            },
+        });
+
+        // 4. 결과 반환
+        return res.status(200).json({
+            message: '[Success] 랭킹 조회 성공',
+            userRank,
+            userRating,
+            neighborUsers: neighbors.map((user, index) => ({
+                rank: userRank - 2 + index,
+                userId: user.userId,
+                nickname: user.user.nickname,
+                userName: user.user.userName,
+                userRating: user.userRating,
+            })),
+        });
+
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 
 export default router;
