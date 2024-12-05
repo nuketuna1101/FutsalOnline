@@ -40,6 +40,14 @@ const getCachedStats = (squad) => {
     // 전처리 계산값 캐싱: 공격권 결정 변수, 공격 변수, 수비 변수
     const cachedStats = squad.map(player => {
         const stats = player.players.playerStats;
+        const upgradeAmount = player.playerUpgrade; 
+        // 전처리: 업그레이드 수치만큼 반영
+        Object.entries(stats).forEach(([key, value]) => {
+            if (key !== 'id' && key !== 'playerId') {
+                stats[key] += upgradeAmount - 1;
+            }
+        });
+        //console.log("이후 stats 객체:", JSON.stringify(stats, null, 2));  // JSON 형태로 포맷팅하여 출력
         const playerStats = {
             stamina: stats.stamina,
             paramAtkPos: GAME_LOGIC_WEIGHTS.WEIGHT_POS_PASS * stats.pass
