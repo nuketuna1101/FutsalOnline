@@ -29,9 +29,6 @@ const simulateMatch = (squad1, squad2) => {
     return { userSquadScore, opponentSquadScore };
 };
 
-
-
-
 // 각각의 모멘텀에서의 계산
 const getCachedStats = (squad) => {
     if (!squad || !Array.isArray(squad) || squad.length === 0) {
@@ -62,9 +59,6 @@ const getCachedStats = (squad) => {
     });
     return cachedStats;
 };
-
-
-
 
 // x, y 인자를 받고 랜덤하게 확률 결과
 const getRandOut = (x, y) => {
