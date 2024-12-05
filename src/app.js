@@ -13,13 +13,14 @@ import usersRouter from './routes/users.routers.js';
 import playersRouter from './routes/players.routers.js';
 import matchesRouter from './routes/matches.routers.js';
 import squadsRouter from './routes/squads.routers.js';
-import gatchaRouter from './routes/gatcha.router.js'
+import gatchaRouter from './routes/gatcha.router.js';
+import marketRouter from './routes/transfermarket.router.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT_NUMBER;
+const PORT = 3321;
 
 const MySQLStore = expressMySQLSession(expressSession);
 const sessionStore = new MySQLStore({
@@ -29,7 +30,7 @@ const sessionStore = new MySQLStore({
   port: process.env.DATABASE_PORT,
   database: process.env.DATABASE_NAME,
   expiration: 1000 * 60 * 60 * 24,
-  createDatabaseTable: true,
+  createDatabaseTable: true, 
 });
 
 // Middlewares
@@ -53,7 +54,7 @@ app.use(
     })
 );
 
-app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter, playerUpgradeRouter]);
+app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter, playerUpgradeRouter,marketRouter]);
 app.use(ErrorHandlingMiddleware);
 
 
