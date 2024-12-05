@@ -206,7 +206,7 @@ router.get('/users/ranks', authMiddleware, async (req, res, next) => {
 
         // 3. 인접한 5명 정보 조회
         const neighbors = await prisma.userElo.findMany({
-            orderBy: { userRating: 'desc' },
+            orderBy: [{ userRating: 'desc' },{ userId: 'asc' },],
             skip: Math.max(userRank - 3, 0),
             take: 5,
             select: {
