@@ -66,11 +66,10 @@ model Players {
 }
 
 model TransferMarket {
-  id       Int      @id @default(autoincrement()) @map("id")
-  playerId Int      @map("playerId")
-  userId   Int      @map("userId")
-  price    Int      @map("price")
-  createAt DateTime @default(now()) @map("createdAt")
+  id             Int      @id @default(autoincrement()) @map("id")
+  userTeamsId    Int      @map("userTeamsId")
+  price          Int      @map("price")
+  createAt       DateTime @default(now()) @map("createdAt")
 
   // players Players @relation(fields: [playerId], references: [id], onDelete: NoAction)
   // users   Users   @relation(fields: [userId], references: [id], onDelete: NoAction)
