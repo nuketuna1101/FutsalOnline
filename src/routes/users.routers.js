@@ -117,7 +117,7 @@ router.post('/users/sign-in', async (req, res, next) => {
             }
         );
         res.cookie('authorization', `Bearer ${accessToken}`);
-        return res.status(200).json({ Message: `${nickname} 로그인 성공` });
+        return res.status(200).json({ Message: `${nickname} 로그인 성공`, nickname, userId: Number(user.id), accessToken });
     } catch (err) {
         next(err);
     }

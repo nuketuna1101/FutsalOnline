@@ -55,6 +55,10 @@ app.use(
 );
 
 app.use('/api', [usersRouter, playersRouter, matchesRouter, squadsRouter,gatchaRouter, playerUpgradeRouter,marketRouter]);
+app.get('/api/ping', (req, res) => 
+  { res.status(200).json({ status: '[Ping Test] Server is running!' }); 
+});
+
 app.use(ErrorHandlingMiddleware);
 
 

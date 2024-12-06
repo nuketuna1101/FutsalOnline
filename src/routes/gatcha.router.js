@@ -53,12 +53,12 @@ router.post('/gatcha',authMiddleware, async (req, res, next) => {
 
             if(updatedUser.cash < 0)
             {
-                return res.status(404).json({ Message: ` No Money ` })
+                return res.status(400).json({ Message: ` No Money ` })
             }
 
             return [playerList[random_count], updatedUser.cash]
         })
-        return res.status(200).json({ Message: ` ${playerName.playerName} 을(를) 뽑았습니다. 잔액 ${cash} ` })
+        return res.status(200).json({ Message: `${playerName.playerName} has been selected. Remaining balance: ${cash}` });
     }
     catch (err) {
         next(err);
