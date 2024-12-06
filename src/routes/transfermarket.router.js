@@ -10,7 +10,6 @@ router.post('/transfermarket', authMiddleware, async (req, res, next) => {
         const { userTeamId, price } = req.body;
         const user = req.user;
 
-        console.log(userTeamId, price);
 
         const marketPlace = await prisma.$transaction(async (tx) => {
             //삭제할 데이터가 있는지 확인 먼저 하자.

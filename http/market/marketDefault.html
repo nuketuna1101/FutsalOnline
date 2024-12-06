@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Teams</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    h1 { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>Teams (Real-Time)</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Updated At</th>
+      </tr>
+    </thead>
+    <tbody id="teams-table-body">
+      <!-- 데이터가 여기 추가됩니다 -->
+    </tbody>
+    <button>확인용</button>
+  </table>
+
+  <script>
+    const socket = io(); // Socket.IO 연결
+
+    // 서버로부터 데이터 업데이트 받기
+    socket.on('update-teams', (teams) => {
+      const tableBody = document.getElementById('teams-table-body');
+      tableBody.innerHTML = ''; // 기존 내용 지우기
+
+      teams.forEach((team) => {
+        const row = `
+          <tr>
+            <td>${team.id}</td>
+            <td>${team.name}</td>
+            <td>${new Date(team.updatedAt).toLocaleString()}</td>
+          </tr>
+        `;
+        tableBody.insertAdjacentHTML('beforeend', row);
+      });
+    });
+  </script>
+</body>
+</html>
