@@ -142,7 +142,7 @@ router.post("/matches", authMiddleware, async (req, res, next) => {
               increment:
                 matchResult === "USER1WIN"
                   ? ELO_WINNER_INCREMENT
-                  : matchResult === "USER1WIN"
+                  : matchResult === "USER2WIN"
                   ? ELO_LOSER_DECREMENT
                   : 0,
             },
@@ -155,7 +155,7 @@ router.post("/matches", authMiddleware, async (req, res, next) => {
               increment:
                 matchResult === "USER2WIN"
                   ? ELO_WINNER_INCREMENT
-                  : matchResult === "USER2WIN"
+                  : matchResult === "USER1WIN"
                   ? ELO_LOSER_DECREMENT
                   : 0,
             },
@@ -286,20 +286,20 @@ router.post("/matches/:userId", authMiddleware, async (req, res, next) => {
             increment:
               matchResult === "USER1WIN"
                 ? ELO_WINNER_INCREMENT
-                : matchResult === "USER1WIN"
+                : matchResult === "USER2WIN"
                 ? ELO_LOSER_DECREMENT
                 : 0,
           },
         },
       }),
       prisma.userElo.update({
-        where: { userId: randomOpponent.userId },
+        where: { userId: opponentUserId },
         data: {
           userRating: {
             increment:
               matchResult === "USER2WIN"
                 ? ELO_WINNER_INCREMENT
-                : matchResult === "USER2WIN"
+                : matchResult === "USER1WIN"
                 ? ELO_LOSER_DECREMENT
                 : 0,
           },
@@ -320,7 +320,7 @@ router.post("/matches/:userId", authMiddleware, async (req, res, next) => {
         userNewRating: userElo.userRating,
       },
       opponent: {
-        userId: randomOpponent.id,
+        userId: opponentUserId,
         opponentNewRating: opponentElo.userRating,
       },
       matchResult: {
