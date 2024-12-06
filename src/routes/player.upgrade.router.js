@@ -43,13 +43,13 @@ router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, nex
         return res.status(404).json({ message: "사용자가 이 선수를 가지고 있지 않습니다." });
       }
 
-      // CSV 파일 경로를 지정하세요
-      const filePath = "./data/upgradePercent.csv";
-      const jsonData = await csvToJson(filePath);
-
       const playerName = selectPlayer.players.playerName;
       const playerId = selectPlayer.players.id;
       const currentUpgradeLevel = selectPlayer.playerUpgrade;
+
+      // CSV 파일 경로를 지정하세요
+      const filePath = "./data/upgradePercent.csv";
+      const jsonData = await csvToJson(filePath);
 
       // CSV 데이터에서 해당 강화 레벨(index)에 해당하는 확률 데이터 찾기
       const upgradeData = jsonData.find(
@@ -95,7 +95,7 @@ router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, nex
         },
       });
 
-      const randomValue = Math.random() * 100;
+      const randomValue = Math.random() * 101;
 
        // playerUpgrade 초기화
       let playerUpgrade = selectPlayer.playerUpgrade;
