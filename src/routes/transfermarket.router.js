@@ -87,14 +87,21 @@ router.post('/transfermarket/:marketId', authMiddleware, async (req, res, next) 
                 throw new Error("돈이 부족합니다.");
             }
 
-            if (!deleted) {
+            if (!deletedfromMarket) {
                 throw new Error("범위 외 접근입니다.");
             }
+
+            //원래 판매자의 정보를 받아오도록 하자
+            const soldedUser = await tx.userTeams.findUnique({
+                where : {
+                    id : parseInt(marketId,10)
+                }
+            });
 
             //판매자는 돈을 벌고
             await tx.userAccount.update({
                 where: {
-                    userId: deletedfromMarket.userId
+                    userId: soldedUser.userId
                 },
                 data: {
                     cash: {
@@ -115,7 +122,7 @@ router.post('/transfermarket/:marketId', authMiddleware, async (req, res, next) 
 
 
             //구매한 사람의 돈은 줄어든다.
-            await tx.userAccount.update({
+            const purchasedUser = await tx.userAccount.update({
                 where: {
                     userId: user.id
                 },
@@ -127,7 +134,7 @@ router.post('/transfermarket/:marketId', authMiddleware, async (req, res, next) 
             });
 
 
-            return inputUserTeams;
+            return purchasedUser;
         });
 
         return res.status(201).json({ data: purchased });
@@ -159,7 +166,11 @@ router.get('/transfermarket', async (req, res, next) => {
                 }
             },
             include: {
-                TransferMarket: true
+                TransferMarket: {
+                    select : {
+                        price : true
+                    }
+                }
             }
         });
 
@@ -181,7 +192,11 @@ router.get('/transfermarket/:playerId', async (req, res, next) => {
                 }
             },
             include: {
-                TransferMarket: true
+                TransferMarket: {
+                    select : {
+                        price : true
+                    }
+                }
             }
         });
 
