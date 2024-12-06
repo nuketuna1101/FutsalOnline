@@ -24,23 +24,22 @@ router.post("/upload", async (req, res) => {
 
     // 데이터 삽입
     for (const player of jsonData) {
-       // 중복 확인: playerName이 이미 존재하는지 검사
-       const existingPlayer = await prisma.players.findFirst({
+      // 중복 확인: playerName이 이미 존재하는지 검사
+      const existingPlayer = await prisma.players.findFirst({
         where: {
-          playerName: player.playerName, 
+          playerName: player.playerName,
         },
       });
 
       // 중복된 경우 건너뛰기
       if (existingPlayer) {
-        console.log(`중복된 선수: ${player.playerName}, 건너뜀`);
-        continue; 
+        continue;
       }
 
       // 플레이어 정보 삽입
       const newPlayer = await prisma.players.create({
         data: {
-          playerName: player.playerName, 
+          playerName: player.playerName,
         },
       });
 
@@ -59,16 +58,16 @@ router.post("/upload", async (req, res) => {
       });
     }
 
-    res.status(200).send("CSV TO JSON Success");
+    return res.status(200).send("CSV TO JSON Success");
   } catch (error) {
-    res.status(500).send("Error");
+    next(err);
   }
 });
 
 // 유저가 가지고 있는 선수 조회
 router.get("/players/my", Authmiddleware, async (req, res, next) => {
   try {
-    const userId = req.user.id; 
+    const userId = req.user.id;
 
     //선수 조회
     const teamPlayers = await prisma.userTeams.findMany({
@@ -95,7 +94,7 @@ router.get("/players/my", Authmiddleware, async (req, res, next) => {
       },
     });
 
-    if(teamPlayers.length === 0) {
+    if (teamPlayers.length === 0) {
       return res.status(404).json({ error: "가지고 있는 선수가 존재하지 않습니다." });
     }
 
@@ -165,8 +164,6 @@ router.get("/players", async (req, res, next) => {
 //선수 리스트에서 한명 검색
 router.get("/players/:playerId", async (req, res, next) => {
   try {
-    console.log("Received playerId:", req.params.playerId);
-
     const { playerId } = req.params;
 
     if (!playerId) {
@@ -176,7 +173,7 @@ router.get("/players/:playerId", async (req, res, next) => {
     //아이디 값으로 선수 검색
     const player = await prisma.players.findFirst({
       where: {
-        id : +playerId,
+        id: +playerId,
       },
       select: {
         playerName: true,
