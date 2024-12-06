@@ -14,7 +14,6 @@ import Authmiddleware from "../middlewares/auth.middleware.js";
 //check csv to json
 import csvToJson from "../public/csvToJson";
 const router = express.Router();
-/* TO DO */
 
 //선수 데이터 csv to json
 router.post("/upload", async (req, res) => {
@@ -71,6 +70,7 @@ router.get("/players/my", Authmiddleware, async (req, res, next) => {
   try {
     const userId = req.user.id; 
 
+    //선수 조회
     const teamPlayers = await prisma.userTeams.findMany({
       where: {
         userId: +userId,
@@ -128,7 +128,6 @@ router.get("/players/my", Authmiddleware, async (req, res, next) => {
 
     return res.status(200).json({ data: enhancedPlayers });
   } catch (err) {
-    console.error("Error in /players/my:", err);
     next(err);
   }
 });
@@ -174,7 +173,7 @@ router.get("/players/:playerId", async (req, res, next) => {
       return res.status(400).json({ error: "playerId가 제공되지 않았습니다." });
     }
 
-    //유니크 아이디 값으로 선수 아이디 검색
+    //아이디 값으로 선수 검색
     const player = await prisma.players.findFirst({
       where: {
         id : +playerId,

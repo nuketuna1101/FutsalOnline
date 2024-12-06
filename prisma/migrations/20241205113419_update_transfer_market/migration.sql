@@ -53,8 +53,7 @@ CREATE TABLE `Players` (
 -- CreateTable
 CREATE TABLE `TransferMarket` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `playerId` INTEGER NOT NULL,
-    `userId` INTEGER NOT NULL,
+    `userTeamsId` INTEGER NOT NULL,
     `price` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -81,6 +80,7 @@ CREATE TABLE `PlayerStats` (
     `playerId` INTEGER NOT NULL,
     `technique` INTEGER NOT NULL DEFAULT 0,
     `pass` INTEGER NOT NULL DEFAULT 0,
+    `pace` INTEGER NOT NULL DEFAULT 0,
     `agility` INTEGER NOT NULL DEFAULT 0,
     `defense` INTEGER NOT NULL DEFAULT 0,
     `finishing` INTEGER NOT NULL DEFAULT 0,

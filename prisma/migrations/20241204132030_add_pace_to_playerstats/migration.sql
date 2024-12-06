@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `PlayerStats` ADD COLUMN `pace` INTEGER NOT NULL DEFAULT 0;

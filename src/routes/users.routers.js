@@ -30,11 +30,14 @@ router.post('/users/sign-up', async (req, res, next) => {
 
         if (isExistId) {
             return res.status(409).json({ Message: '이미 존재하는 아이디입니다.' });
-        } else if (conLowAndNumber(nickname) === false) {
+        } 
+        if (conLowAndNumber(nickname) === false) {
             return res.status(401).json({ Message: '아이디는 영어소문자 + 숫자로 이루어져야합니다.' })
-        } else if (password.length <= 5) {
+        } 
+        if (password.length <= 5) {
             return res.status(401).json({ Message: '비밀번호는 6자리 이상이어야 합니다.' });
-        } else if (conLowAndNumber(password) === false) {
+        } 
+        if (conLowAndNumber(password) === false) {
             return res.status(401).json({ Message: '비밀번호는 영어소문자 + 숫자로 이루어져야합니다.' })
         }
         if(password != confirmPassword){
@@ -103,7 +106,6 @@ router.post('/users/sign-in', async (req, res, next) => {
         if (!(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ Message: '비밀번호가 일치하지 않습니다.' });
         }
-        // req.session.userId = Number(user.id);
 
         const accessToken = jwt.sign(
             {
@@ -114,7 +116,6 @@ router.post('/users/sign-in', async (req, res, next) => {
                 expiresIn: '10m'
             }
         );
-        console.log("check accessToken: " + (accessToken == null));
         res.cookie('authorization', `Bearer ${accessToken}`);
         return res.status(200).json({ Message: `${nickname} 로그인 성공` });
     } catch (err) {
@@ -159,6 +160,8 @@ router.post('/users/cash', authMiddleware, async (req, res, next) => {
 router.get('/users/squad/:userId', async (req, res, next) => {
     try {
         const userId = Number(req.params.userId);
+        if (!userId)
+            return response.status(400).json({ Message: '[Bad Request] invalid userId'});
         const sqauds = await prisma.userTeams.findMany({
             where: {
                 userId: userId,
@@ -168,8 +171,7 @@ router.get('/users/squad/:userId', async (req, res, next) => {
                 players: {
                     include: {
                         playerStats: true,
-
-                    }
+                    },
                 },
             },
         });
