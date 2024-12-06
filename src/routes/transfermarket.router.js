@@ -160,9 +160,9 @@ router.get('/transfermarket', async (req, res, next) => {
     try {
         //유저 팀즈에서 마켓에 등록된 것들을 모두 가져온다.
         const marketList = await prisma.userTeams.findMany({
-            where: {
-                TransferMarket: {
-                    some: {}
+            where : {
+                TransferMarket : {
+                    isNot : null
                 }
             },
             include: {
@@ -173,6 +173,8 @@ router.get('/transfermarket', async (req, res, next) => {
                 }
             }
         });
+
+        console.log(marketList);
 
         return res.status(201).json({ data: marketList });
     } catch (err) {
@@ -188,7 +190,7 @@ router.get('/transfermarket/:playerId', async (req, res, next) => {
             where: {
                 playerId: parseInt(playerId, 10),
                 TransferMarket: {
-                    some: {}
+                    isNot : null
                 }
             },
             include: {
