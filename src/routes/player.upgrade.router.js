@@ -33,7 +33,7 @@ router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, nex
             select: {
               playerName: true,
               // playerId를 가져오기 위해 추가
-              id: true, 
+              id: true,
             },
           },
         },
@@ -97,11 +97,11 @@ router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, nex
 
       const randomValue = Math.random() * 101;
 
-       // playerUpgrade 초기화
+      // playerUpgrade 초기화
       let playerUpgrade = selectPlayer.playerUpgrade;
 
       let result;
-      let upgradedStats = null; 
+      let upgradedStats = null;
 
       if (randomValue < successRate) {
         const updatedUserTeam = await prisma.userTeams.update({
