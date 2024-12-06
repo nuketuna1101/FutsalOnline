@@ -10,43 +10,55 @@ router.post('/transfermarket', authMiddleware, async (req, res, next) => {
         const { userTeamId, price } = req.body;
         const user = req.user;
 
-
         const marketPlace = await prisma.$transaction(async (tx) => {
             //삭제할 데이터가 있는지 확인 먼저 하자.
-            const deletedTeams = await tx.userTeams.delete({
+            const deletedTeams = await tx.userTeams.findUnique({
                 where: {
-                    id: userTeamId,
-                    AND: [
-                        { userId: user.id },
-                        { isSquad: false }
-                    ]
-                }
+                    id: userTeamId
+                },
             });
 
-            if (!deletedTeams || deletedTeams.isSquad) {
-                throw new Error("캐릭터에 접근할 수 없습니다.")
+            if (!deletedTeams) {
+                throw new Error("해당 캐릭터가 존재하지 않습니다.");
+            }
+
+            if (deletedTeams.isSquad) {
+                throw new Error("이미 팀 편성된 캐릭터입니다.")
+            }
+
+            if (deletedTeams.userId !== user.id) {
+                throw new Error("다른 유저의 캐릭터입니다.")
             }
 
             const market = await tx.transferMarket.create({
                 data: {
-                    userId: deletedTeams.userId,
-                    playerId: deletedTeams.playerId,
-                    price: price
-                }
-            })
+                    userTeamsId: deletedTeams.id,
+                    price: price,
+                },
+            });
 
-            return market
-        })
+            return market;
+        });
 
-        return res.status(201).json({ data: marketPlace })
+        return res.status(201).json({ data: marketPlace });
+    } catch (err) {
+        switch (err.message) {
+            case "해당 캐릭터가 존재하지 않습니다.":
+                return res.status(404).json({ error: "해당 캐릭터가 존재하지 않습니다." })
+                break;
+            case "이미 팀 편성된 캐릭터입니다.":
+                return res.status(404).json({ error: "이미 팀 편성된 캐릭터입니다." })
+                break;
+            case "다른 유저의 캐릭터입니다.":
+                return res.status(404).json({ error: "다른 유저의 캐릭터입니다." })
+                break;
+            default:
+                next(err);
+                break;
+        }
+
     }
-    catch (err) {
-        next(err);
-    }
-
-
-
-})
+});
 
 //이적 시장 구매
 //user의 데이터를 받아오도록 하고
@@ -56,133 +68,128 @@ router.post('/transfermarket/:marketId', authMiddleware, async (req, res, next) 
         const { marketId } = req.params;
         const user = req.user;
 
-        const parchased = await prisma.$transaction(async (tx) => {
-            //먼저 경매장에서 제거한다.
-            const deleted = await tx.transferMarket.delete({
-                where: {
-                    id: parseInt(marketId, 10)
-                }
-            })
-
-            if (!deleted) {
-                throw new Error("범위 외 접근입니다.")
-            }
-
+        const purchased = await prisma.$transaction(async (tx) => {
+            //돈이 있는지 검수한다.
             const userAccount = await tx.userAccount.findFirst({
                 where: {
                     userId: user.id
                 }
             })
 
-            if (userAccount.cash < deleted.price) {
-                throw new Error("돈이 부족합니다.")
+            //먼저 경매장에서 제거한다.
+            const deletedfromMarket = await tx.transferMarket.delete({
+                where: {
+                    id: parseInt(marketId, 10),
+                },
+            });
+
+            if (userAccount.cash < deletedfromMarket.price) {
+                throw new Error("돈이 부족합니다.");
             }
 
-            //밑으로는 돈을 지불하고 플레이어를 영입한다.
+            if (!deleted) {
+                throw new Error("범위 외 접근입니다.");
+            }
 
-
-            //삭제한 캐릭터를 teams에 집어 넣는다.
-            const inputUserTeams = await tx.userTeams.create({
+            //판매자는 돈을 벌고
+            await tx.userAccount.update({
+                where: {
+                    userId: deletedfromMarket.userId
+                },
                 data: {
-                    userId: user.id,
-                    playerId: deleted.playerId,
-                    isSquad: false,
+                    cash: {
+                        increment: deletedfromMarket.price,
+                    },
+                },
+            });
+
+            //구매자와 판매자의 정보를 변경하면 된다.
+            await tx.userTeams.update({
+                where: {
+                    id: deletedfromMarket.userTeamsId
+                },
+                data: {
+                    userId: user.id
                 }
             })
 
-            //구매한 사람의 돈은 줄어들고
+
+            //구매한 사람의 돈은 줄어든다.
             await tx.userAccount.update({
                 where: {
                     userId: user.id
                 },
                 data: {
                     cash: {
-                        decrement: deleted.price
-                    }
-                }
-            })
-
-            //판매한 사람이 아직 존재하는지 확인하고
-            const soldedUser = await tx.users.findUnique({
-                where: {
-                    id: deleted.userId
-                }
-            })
-
-            if (!soldedUser) {
-                console.log("해당 유저는 이미 회원 탈퇴했습니다.")
-            }
-            else {
-                //판매한 사람의 돈은 늘어난다.
-                await tx.userAccount.update({
-                    where: {
-                        userId: deleted.userId
+                        decrement: deletedfromMarket.price
                     },
-                    data: {
-                        cash: {
-                            increment: deleted.price
-                        }
-                    }
-                })
-            }
+                },
+            });
 
 
             return inputUserTeams;
-        })
+        });
 
-        return res.status(201).json({ data: parchased })
+        return res.status(201).json({ data: purchased });
+    } catch (err) {
+        switch (err.message) {
+            case "돈이 부족합니다.":
+                return res.status(404).json({ error: "돈이 부족합니다." });
+                break;
+            case "범위 외 접근입니다.":
+                return res.status(404).json({ error: "범위 외 접근입니다." });
+                break
+            default:
+                next(err);
+                break;
+        }
+
     }
-    catch (err) {
-        next(err);
-    }
+});
 
 
-})
-
-
-//매물 목록 조회
+//매물 목록 조회 = 전체 조회
 router.get('/transfermarket', async (req, res, next) => {
     try {
-        const marketList = await prisma.transferMarket.findMany({
-            select: {
-                id: true,
-                userId: true,
-                playerId: true,
-                price: true
+        //유저 팀즈에서 마켓에 등록된 것들을 모두 가져온다.
+        const marketList = await prisma.userTeams.findMany({
+            where: {
+                TransferMarket: {
+                    some: {}
+                }
+            },
+            include: {
+                TransferMarket: true
             }
-        })
+        });
 
-
-        return res.status(201).json({ data: marketList })
+        return res.status(201).json({ data: marketList });
+    } catch (err) {
+        next(err);
     }
-    catch (err) {
-        next(err)
-    }
-})
+});
 
 //매물 검색 조회
 router.get('/transfermarket/:playerId', async (req, res, next) => {
     try {
         const { playerId } = req.params;
-        const playerPickUpToMarket = await prisma.transferMarket.findFirst({
+        const playerPickUpToMarket = await prisma.userTeams.findMany({
             where: {
-                playerId: parseInt(playerId, 10)
+                playerId: parseInt(playerId, 10),
+                TransferMarket: {
+                    some: {}
+                }
             },
-            select: {
-                id: true,
-                userId: true,
-                playerId: true,
-                price: true
+            include: {
+                TransferMarket: true
             }
-        })
-
+        });
 
         return res.status(201).json({ data: playerPickUpToMarket });
-    }
-    catch (err) {
+    } catch (err) {
         next(err);
     }
-})
+});
 
 //등록된 매물 등록 취소
 router.delete('/transfermarket', authMiddleware, async (req, res, next) => {
@@ -195,35 +202,45 @@ router.delete('/transfermarket', authMiddleware, async (req, res, next) => {
             const cancelMarket = await tx.transferMarket.delete({
                 where: {
                     id: transferMarketId,
-                    AND: [{
-                        userId: user.id
-                    }]
-                }
-            })
+                },
+            });
 
             if (!cancelMarket) {
                 throw new Error("잘못된 접근입니다.");
             }
 
-            //삭제된 걸 확인했다면 그 삭제된 데이터 가운데 하나를 테이블에 집어 넣도록 하자.
-
-            const pushTeams = await tx.userTeams.create({
-                data: {
-                    userId: cancelMarket.userId,
-                    playerId: cancelMarket.playerId
+            const currentUserTeam = await tx.userTeams.findUnique({
+                where: {
+                    id: cancelMarket.userTeamsId
                 }
             })
 
-            return pushTeams;
-        })
+            if (currentUserTeam.userId !== user.id) {
+                throw new Error("다른 유저의 것입니다.");
+            }
+
+
+
+
+            //teams를 지우지 않으면 되니까 아예 별도의 로직은 필요 없다.
+
+            return currentUserTeam;
+        });
         //취소된 것은 그냥 바로 teams에 들어오면 되는 거 아닌가.
+        return res.status(201).json({ data: cancelMarketAndPushTeams });
+    } catch (err) {
+        switch (err.message) {
+            case "잘못된 접근입니다.":
+                return res.status(404).json({ error: "잘못된 접근입니다." });
+                break;
+            case "다른 유저의 것입니다.":
+                return res.status(404).json({ error: "다른 유저의 것입니다." });
+                break
+            default:
+                next(err);
 
-        return res.status(201).json({ data: cancelMarketAndPushTeams })
+        }
     }
-    catch (err) {
-        next(err);
-    }
-})
-
+});
 
 export default router;
