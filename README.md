@@ -227,4 +227,5 @@ matches.router.js
 player.upgrade.router.js
 
 - 강화 - router.post("/players/:userTeamId/upgrade", authMiddleware, async (req, res, next)
+
 보유 선수 테이블에서 선수를 선택을 하고 보유 선수 테이블에서 boolean이 true로 되어있는 선수와 강화 선택이 된 선수를 제외하고 take를 사용해서 최대 5개의 선수를 자동 지정을 하고 강화 확률 csv에 선수의 강화단계에 맞는 확률을 가져와서 강화를 진행하는 방식입니다.
